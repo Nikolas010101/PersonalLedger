@@ -1,0 +1,28 @@
+{
+    "name": "personalledger",
+    "version": "1.0.0",
+    "type": "module",
+    "description": "",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1",
+        "start": "nodemon src/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Nikolas010101/PersonalLedger.git"
+    },
+    "author": "Nikolas Grande",
+    "license": "ISC",
+    "bugs": {
+        "url": "https://github.com/Nikolas010101/PersonalLedger/issues"
+    },
+    "homepage": "https://github.com/Nikolas010101/PersonalLedger#readme",
+    "dependencies": {
+        "better-sqlite3": "^12.2.0",
+        "express": "^5.1.0",
+        "multer": "^2.0.1",
+        "nodemon": "^3.1.10",
+        "xlsx": "^0.18.5"
+    }
+}
