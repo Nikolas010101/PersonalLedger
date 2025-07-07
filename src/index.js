@@ -29,6 +29,10 @@ app.get("/category-manager", (req, res) => {
     );
 });
 
+app.get("/rule-manager", (req, res) => {
+    res.sendFile(join(__dirname, "..", "public", "html", "rule-manager.html"));
+});
+
 const upload = multer({ dest: "uploads/" });
 
 app.post("/upload", upload.single("file"), (req, res) => {
@@ -129,6 +133,41 @@ app.post("/set-category", express.json(), (req, res) => {
     }
 });
 
+app.post("/rules", express.json(), (req, res) => {
+    const { pattern, category, direction } = req.body;
+    if (!pattern || !category || !direction) {
+        return res
+            .status(400)
+            .json({ error: "Pattern, category, and direction required." });
+    }
+    db.prepare("INSERT INTO rules (pattern, category, direction) VALUES (?, ?, ?)").run(
+        pattern,
+        category,
+        direction
+    );
+    res.json({ success: true });
+});
+
+app.post("/rules/:id/apply", (req, res) => {
+    const rule = db
+        .prepare("SELECT * FROM rules WHERE id = ?")
+        .get(req.params.id);
+    if (!rule) return res.status(404).json({ error: "Rule not found" });
+
+    let query = `UPDATE ledger SET category = ? WHERE category IS NULL AND description LIKE ?`;
+    const params = [rule.category, `%${rule.pattern}%`];
+
+    if (rule.direction === "debit") {
+        query += " AND value < 0";
+    } else if (rule.direction === "credit") {
+        query += " AND value > 0";
+    }
+
+    const stmt = db.prepare(query);
+    const info = stmt.run(...params);
+    res.json({ updated: info.changes });
+});
+
 app.delete("/categories/:id", (req, res) => {
     const id = req.params.id;
     try {
@@ -141,6 +180,18 @@ app.delete("/categories/:id", (req, res) => {
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ error: "Failed to delete category." });
+    }
+});
+
+app.delete("/rules/:id", (req, res) => {
+    try {
+        const id = parseInt(req.params.id, 10);
+        const stmt = db.prepare("DELETE FROM rules WHERE id = ?");
+        const result = stmt.run(id);
+        res.json({ success: result.changes > 0 });
+    } catch (err) {
+        console.error("Error deleting rule:", err);
+        res.status(500).json({ error: "Failed to delete rule." });
     }
 });
 
@@ -178,6 +229,11 @@ app.get("/categories", (req, res) => {
     } catch (err) {
         res.status(500).json({ error: "Failed to fetch categories." });
     }
+});
+
+app.get("/rules", (req, res) => {
+    const rules = db.prepare("SELECT * FROM rules").all();
+    res.json({ rules });
 });
 
 function formatDate(dateStr) {

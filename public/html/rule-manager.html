@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Manage Rules</title>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <h1>Transaction Categorization Rules</h1>
+
+        <form id="ruleForm">
+            <input
+                type="text"
+                id="pattern"
+                placeholder="Description Pattern"
+                required
+            />
+            <select id="direction" required>
+                <option value="">Select a Direction</option>
+                <option value="all" selected>All</option>
+                <option value="debit">Debit</option>
+                <option value="credit">Credit</option>
+            </select>
+            <select id="category" required>
+                <option value="">Select Category</option>
+            </select>
+            <button type="submit">Add Rule</button>
+        </form>
+
+        <ul id="rulesList" class="category-list" style="margin-top: 30px"></ul>
+
+        <div class="link-container">
+            <a href="/">Home</a>
+            <a href="/view">View Transactions</a>
+            <a href="/category-manager">Manage Categories</a>
+        </div>
+
+        <script src="/js/rule-manager.js"></script>
+    </body>
+</html>

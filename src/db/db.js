@@ -26,4 +26,13 @@ db.exec(`
   );
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS rules (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    pattern TEXT NOT NULL,
+    category TEXT NOT NULL,
+    direction TEXT DEFAULT 'all'
+);
+`);
+
 export default db;
