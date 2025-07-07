@@ -11,11 +11,18 @@ const db = new Database(join(__dirname, "data.db"));
 db.exec(`
   CREATE TABLE IF NOT EXISTS ledger (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    date TEXT,
+    date INTEGER NOT NULL,
     description TEXT,
     value INTEGER,
     category TEXT,
     UNIQUE(date, description, value) ON CONFLICT IGNORE
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS categories (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL
   );
 `);
 

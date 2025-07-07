@@ -23,6 +23,12 @@ app.get("/view", (req, res) => {
     res.sendFile(join(__dirname, "..", "public", "html", "view.html"));
 });
 
+app.get("/category-manager", (req, res) => {
+    res.sendFile(
+        join(__dirname, "..", "public", "html", "category-manager.html")
+    );
+});
+
 const upload = multer({ dest: "uploads/" });
 
 app.post("/upload", upload.single("file"), (req, res) => {
@@ -49,7 +55,7 @@ app.post("/upload", upload.single("file"), (req, res) => {
                 if (row[3] !== "") {
                     // Assuming the 4th column is the value column
                     const rowObj = {
-                        date: row[0],
+                        date: toUnixTs(row[0]),
                         description: row[1],
                         value: Math.round(row[3] * 100),
                     };
@@ -73,13 +79,13 @@ app.post("/upload", upload.single("file"), (req, res) => {
             for (const row of dataRows) {
                 if (row[2] !== "") {
                     const rowObj = {
-                        date: formatDate(row[0]),
+                        date: toUnixTs(formatDate(row[0])),
                         description: row[1],
                         value: Math.round(parseFloat(row[2]) * -100),
                     };
                     const { date, description, value } = rowObj;
 
-                    if (date.length === 10) {
+                    if (!isNaN(date)) {
                         const result = insert.run(date, description, value);
                         if (result.changes > 0) {
                             insertedCount++;
@@ -98,15 +104,66 @@ app.post("/upload", upload.single("file"), (req, res) => {
     }
 });
 
+app.post("/categories", express.json(), (req, res) => {
+    const { name } = req.body;
+    try {
+        const result = db
+            .prepare("INSERT INTO categories (name) VALUES (?)")
+            .run(name);
+        res.json({ success: true, id: result.lastInsertRowid });
+    } catch (err) {
+        res.status(500).json({ error: "Category might already exist." });
+    }
+});
+
+app.post("/set-category", express.json(), (req, res) => {
+    const { id, category } = req.body;
+    try {
+        db.prepare("UPDATE ledger SET category = ? WHERE id = ?").run(
+            category,
+            id
+        );
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to update category." });
+    }
+});
+
+app.delete("/categories/:id", (req, res) => {
+    const id = req.params.id;
+    try {
+        const result = db
+            .prepare("DELETE FROM categories WHERE id = ?")
+            .run(id);
+        if (result.changes === 0) {
+            return res.status(404).json({ error: "Category not found." });
+        }
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to delete category." });
+    }
+});
+
 app.get("/ledger", (req, res) => {
     try {
         const rows = db
             .prepare("SELECT * FROM ledger ORDER BY date DESC")
             .all();
-        const formatted = rows.map((row) => ({
-            ...row,
-            value: (row.value / 100).toFixed(2), // convert cents
-        }));
+
+        const formatted = rows.map((row) => {
+            const date = new Date(row.date * 1000); // Convert from seconds to ms
+            const day = String(date.getUTCDate()).padStart(2, "0");
+            const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+            const year = date.getUTCFullYear();
+            const formattedDate = `${day}/${month}/${year}`;
+
+            return {
+                ...row,
+                date: formattedDate,
+                value: (row.value / 100).toFixed(2), // convert cents
+            };
+        });
+
         res.json({ data: formatted });
     } catch (err) {
         console.error("Error fetching ledger:", err);
@@ -114,9 +171,23 @@ app.get("/ledger", (req, res) => {
     }
 });
 
+app.get("/categories", (req, res) => {
+    try {
+        const rows = db.prepare("SELECT * FROM categories").all();
+        res.json({ data: rows });
+    } catch (err) {
+        res.status(500).json({ error: "Failed to fetch categories." });
+    }
+});
+
 function formatDate(dateStr) {
     const [year, month, day] = dateStr.split("-");
     return `${day}/${month}/${year}`;
+}
+
+function toUnixTs(dateStr) {
+    const [d, m, y] = dateStr.split("/");
+    return Math.floor(new Date(`${y}-${m}-${d}T00:00:00Z`).getTime() / 1000);
 }
 
 app.listen(port, () => {

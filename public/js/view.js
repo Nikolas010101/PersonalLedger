@@ -31,6 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
     function render() {
         renderTable();
         renderPagination();
+        populateCategories();
     }
 
     function renderTable() {
@@ -53,9 +54,43 @@ document.addEventListener("DOMContentLoaded", () => {
                 ).toLocaleString("pt-BR", {
                     minimumFractionDigits: 2,
                 })}</td>
-                <td>${row.category ?? ""}</td>
+                <td>
+                    <select data-id="${row.id}" class="category-select">
+                        <option value="">-- Select --</option>
+                    </select>
+                </td>
             `;
             tableBody.appendChild(tr);
+        });
+    }
+
+    async function populateCategories() {
+        const res = await fetch("/categories");
+        const { data: categories } = await res.json();
+
+        document.querySelectorAll(".category-select").forEach((select) => {
+            const rowId = select.getAttribute("data-id");
+            const currentCategory =
+                data.find((d) => d.id == rowId)?.category ?? "";
+
+            categories.forEach((cat) => {
+                const opt = document.createElement("option");
+                opt.value = cat.name;
+                opt.textContent = cat.name;
+                if (cat.name === currentCategory) opt.selected = true;
+                select.appendChild(opt);
+            });
+
+            select.addEventListener("change", async (e) => {
+                await fetch("/set-category", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        id: rowId,
+                        category: e.target.value,
+                    }),
+                });
+            });
         });
     }
 
