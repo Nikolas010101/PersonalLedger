@@ -3,6 +3,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const endDate = document.getElementById("endDate");
     const direction = document.getElementById("direction");
     const categoryFilter = document.getElementById("categoryFilter");
+    const groupBySelect = document.getElementById("groupBy");
     const loadChartsBtn = document.getElementById("loadCharts");
 
     const cashflowCtx = document
@@ -22,6 +23,37 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function getGroupKey(dateStr, groupBy) {
+        const [day, month, year] = dateStr.split("/").map(Number);
+        const date = new Date(year, month - 1, day);
+
+        switch (groupBy) {
+            case "week":
+                return getISOWeekYearKey(date);
+            case "month":
+                return `${year}-${String(month).padStart(2, "0")}`;
+            case "year":
+                return `${year}`;
+            case "day":
+            default:
+                return dateStr;
+        }
+    }
+
+    function getISOWeekYearKey(date) {
+        const target = new Date(date.valueOf());
+        const dayNr = (date.getDay() + 6) % 7;
+        target.setDate(target.getDate() - dayNr + 3);
+        const firstThursday = target.valueOf();
+        target.setMonth(0, 1);
+        if (target.getDay() !== 4) {
+            target.setMonth(0, 1 + ((4 - target.getDay() + 7) % 7));
+        }
+        const weekNumber = 1 + Math.ceil((firstThursday - target) / 604800000);
+        const year = date.getFullYear();
+        return `${year}-W${String(weekNumber).padStart(2, "0")}`;
+    }
+
     async function loadDataAndRenderCharts() {
         let url = "/ledger?";
         if (startDate.value) url += `start=${startDate.value}&`;
@@ -33,34 +65,29 @@ document.addEventListener("DOMContentLoaded", () => {
         );
         if (selectedCats.length) url += `categories=${selectedCats.join(",")}&`;
 
+        const groupBy = groupBySelect.value;
+
         const res = await fetch(url);
         const json = await res.json();
         const data = json.data;
 
-        const byDate = {};
-        const categoryByDate = {};
+        const byGroup = {};
+        const categoriesByGroup = {};
 
         data.forEach((row) => {
-            if (!byDate[row.date]) {
-                byDate[row.date] = 0;
-                categoryByDate[row.date] = new Set();
+            const groupKey = getGroupKey(row.date, groupBy);
+            if (!byGroup[groupKey]) {
+                byGroup[groupKey] = 0;
+                categoriesByGroup[groupKey] = new Set();
             }
-            byDate[row.date] += parseFloat(row.value);
-            categoryByDate[row.date].add(row.category);
+            byGroup[groupKey] += parseFloat(row.value);
+            categoriesByGroup[groupKey].add(row.category);
         });
 
-        const dateLabels = Object.keys(byDate).sort((a, b) => {
-            const [da, ma, ya] = a.split("/");
-            const [db, mb, yb] = b.split("/");
-            return (
-                new Date(`${ya}-${ma}-${da}`) - new Date(`${yb}-${mb}-${db}`)
-            );
-        });
-
-        const dateValues = dateLabels.map((date) => byDate[date]);
-
-        const dateCategories = dateLabels.map((date) =>
-            Array.from(categoryByDate[date])
+        const groupLabels = Object.keys(byGroup).sort();
+        const groupValues = groupLabels.map((label) => byGroup[label]);
+        const groupCategories = groupLabels.map((label) =>
+            Array.from(categoriesByGroup[label])
         );
 
         const byCategory = {};
@@ -78,14 +105,14 @@ document.addEventListener("DOMContentLoaded", () => {
         cashflowChart = new Chart(cashflowCtx, {
             type: "bar",
             data: {
-                labels: dateLabels,
+                labels: groupLabels,
                 datasets: [
                     {
-                        data: dateValues,
+                        data: groupValues,
                         backgroundColor: "rgba(54, 162, 235, 0.7)",
                         borderColor: "rgba(54, 162, 235, 1)",
                         borderWidth: 1,
-                        categories: dateCategories,
+                        categories: groupCategories,
                     },
                 ],
             },
@@ -94,7 +121,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 maintainAspectRatio: false,
                 scales: {
                     x: {
-                        title: { display: true, text: "Date" },
+                        title: {
+                            display: true,
+                            text:
+                                groupBy.charAt(0).toUpperCase() +
+                                groupBy.slice(1),
+                        },
                         ticks: {
                             autoSkip: true,
                             maxTicksLimit: 10,
