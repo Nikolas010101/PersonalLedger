@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Charts</title>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <h1>Finance Charts</h1>
+
+        <div class="filters">
+            <label>Start Date: <input type="date" id="startDate" /></label>
+            <label>End Date: <input type="date" id="endDate" /></label>
+            <label
+                >Direction:
+                <select id="direction">
+                    <option value="">All</option>
+                    <option value="debit">Debit</option>
+                    <option value="credit">Credit</option>
+                </select>
+            </label>
+            <label
+                >Category:
+                <select id="categoryFilter" multiple></select>
+            </label>
+            <button id="loadCharts">Load Charts</button>
+        </div>
+
+        <div class="charts-container">
+            <div class="chart-box">
+                <canvas id="cashflowChart"></canvas>
+            </div>
+            <div class="chart-box">
+                <canvas id="pieChart"></canvas>
+            </div>
+        </div>
+
+        <div class="link-container">
+            <a href="/">Home</a>
+            <a href="/view">View Transactions</a>
+            <a href="/charts">Charts</a>
+            <a href="/category-manager">Manage Categories</a>
+            <a href="/rule-manager">Manage Rules</a>
+        </div>
+
+        <script src="/js/charts.js"></script>
+    </body>
+</html>

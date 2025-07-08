@@ -23,6 +23,10 @@ app.get("/view", (req, res) => {
     res.sendFile(join(__dirname, "..", "public", "html", "view.html"));
 });
 
+app.get("/charts", (req, res) => {
+    res.sendFile(join(__dirname, "..", "public", "html", "charts.html"));
+});
+
 app.get("/category-manager", (req, res) => {
     res.sendFile(
         join(__dirname, "..", "public", "html", "category-manager.html")
@@ -140,11 +144,9 @@ app.post("/rules", express.json(), (req, res) => {
             .status(400)
             .json({ error: "Pattern, category, and direction required." });
     }
-    db.prepare("INSERT INTO rules (pattern, category, direction) VALUES (?, ?, ?)").run(
-        pattern,
-        category,
-        direction
-    );
+    db.prepare(
+        "INSERT INTO rules (pattern, category, direction) VALUES (?, ?, ?)"
+    ).run(pattern, category, direction);
     res.json({ success: true });
 });
 
@@ -197,23 +199,49 @@ app.delete("/rules/:id", (req, res) => {
 
 app.get("/ledger", (req, res) => {
     try {
-        const rows = db
-            .prepare("SELECT * FROM ledger ORDER BY date DESC")
-            .all();
+        const { start, end, direction, categories } = req.query;
+        let query = "SELECT * FROM ledger";
+        const conditions = [];
+        const params = {};
 
-        const formatted = rows.map((row) => {
-            const date = new Date(row.date * 1000); // Convert from seconds to ms
-            const day = String(date.getUTCDate()).padStart(2, "0");
-            const month = String(date.getUTCMonth() + 1).padStart(2, "0");
-            const year = date.getUTCFullYear();
-            const formattedDate = `${day}/${month}/${year}`;
+        // Convert and filter by date range
+        if (start) {
+            conditions.push("date >= @start");
+            params.start = Math.floor(new Date(start).getTime() / 1000);
+        }
+        if (end) {
+            conditions.push("date <= @end");
+            params.end = Math.floor(new Date(end).getTime() / 1000);
+        }
 
-            return {
-                ...row,
-                date: formattedDate,
-                value: (row.value / 100).toFixed(2), // convert cents
-            };
-        });
+        // Filter by direction
+        if (direction === "debit") {
+            conditions.push("value < 0");
+        } else if (direction === "credit") {
+            conditions.push("value > 0");
+        }
+
+        // Filter by categories
+        if (categories) {
+            const list = categories.split(",");
+            const placeholders = list.map((_, i) => `@cat${i}`);
+            list.forEach((cat, i) => (params[`cat${i}`] = cat));
+            conditions.push(`category IN (${placeholders.join(",")})`);
+        }
+
+        if (conditions.length) {
+            query += " WHERE " + conditions.join(" AND ");
+        }
+
+        query += " ORDER BY date DESC";
+
+        const rows = db.prepare(query).all(params);
+
+        const formatted = rows.map((row) => ({
+            ...row,
+            value: (row.value / 100).toFixed(2),
+            date: new Date(row.date * 1000).toLocaleDateString("en-GB"),
+        }));
 
         res.json({ data: formatted });
     } catch (err) {
