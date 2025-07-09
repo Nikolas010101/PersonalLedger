@@ -10,7 +10,14 @@ document.addEventListener("DOMContentLoaded", () => {
         .getElementById("cashflowChart")
         .getContext("2d");
     const pieCtx = document.getElementById("pieChart").getContext("2d");
-    let cashflowChart, pieChart;
+    const balanceLineChartCtx = document
+        .getElementById("balanceLineChart")
+        .getContext("2d");
+    const incomeExpenseChartCtx = document
+        .getElementById("incomeExpenseChart")
+        .getContext("2d");
+
+    let cashflowChart, pieChart, balanceLineChart, incomeExpenseChart;
 
     async function loadCategories() {
         const res = await fetch("/categories");
@@ -85,6 +92,13 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const groupLabels = Object.keys(byGroup).sort();
+
+        let cumulativeBalance = 0;
+        const cumulativeValues = groupLabels.map((label) => {
+            cumulativeBalance += byGroup[label];
+            return cumulativeBalance;
+        });
+
         const groupValues = groupLabels.map((label) => byGroup[label]);
         const groupCategories = groupLabels.map((label) =>
             Array.from(categoriesByGroup[label])
@@ -96,11 +110,25 @@ document.addEventListener("DOMContentLoaded", () => {
             byCategory[row.category] += parseFloat(row.value);
         });
 
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        data.forEach((row) => {
+            const val = parseFloat(row.value);
+            if (val > 0) {
+                totalIncome += val;
+            } else {
+                totalExpense += Math.abs(val);
+            }
+        });
+
         const catLabels = Object.keys(byCategory);
         const catValues = catLabels.map((cat) => byCategory[cat]);
 
         if (cashflowChart) cashflowChart.destroy();
         if (pieChart) pieChart.destroy();
+        if (balanceLineChart) balanceLineChart.destroy();
+        if (incomeExpenseChart) incomeExpenseChart.destroy();
 
         cashflowChart = new Chart(cashflowCtx, {
             type: "bar",
@@ -180,6 +208,73 @@ document.addEventListener("DOMContentLoaded", () => {
                         ),
                     },
                 ],
+            },
+        });
+
+        balanceLineChart = new Chart(balanceLineChartCtx, {
+            type: "line",
+            data: {
+                labels: groupLabels,
+                datasets: [
+                    {
+                        data: cumulativeValues,
+                        fill: false,
+                        borderColor: "rgba(75, 192, 192, 1)",
+                        tension: 0.2,
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text:
+                                groupBy.charAt(0).toUpperCase() +
+                                groupBy.slice(1),
+                        },
+                        ticks: {
+                            autoSkip: true,
+                            maxTicksLimit: 10,
+                            maxRotation: 45,
+                            minRotation: 30,
+                        },
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: "Balance",
+                        },
+                    },
+                },
+                plugins: {
+                    legend: {
+                        display: false,
+                    },
+                },
+            },
+        });
+
+        incomeExpenseChart = new Chart(incomeExpenseChartCtx, {
+            type: "doughnut",
+            data: {
+                labels: ["Income", "Expenses"],
+                datasets: [
+                    {
+                        data: [totalIncome, totalExpense],
+                        backgroundColor: ["#4caf50", "#f44336"],
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: "bottom",
+                    },
+                },
             },
         });
     }
