@@ -5,6 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const categoryFilter = document.getElementById("categoryFilter");
     const groupBySelect = document.getElementById("groupBy");
     const loadChartsBtn = document.getElementById("loadCharts");
+    const sourceFilter = document.getElementById("sourceFilter");
 
     const cashflowCtx = document
         .getElementById("cashflowChart")
@@ -66,6 +67,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (startDate.value) url += `start=${startDate.value}&`;
         if (endDate.value) url += `end=${endDate.value}&`;
         if (direction.value) url += `direction=${direction.value}&`;
+
+        if (sourceFilter.value)
+            url += `source=${encodeURIComponent(sourceFilter.value)}&`;
 
         const selectedCats = Array.from(categoryFilter.selectedOptions).map(
             (o) => o.value

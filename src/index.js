@@ -55,8 +55,8 @@ app.post("/upload", upload.single("file"), (req, res) => {
 
             const dataRows = rows.slice(9);
             const insert = db.prepare(`
-        INSERT INTO ledger (date, description, value, category)
-        VALUES (?, ?, ?, NULL)
+        INSERT INTO ledger (date, description, value, category, source)
+        VALUES (?, ?, ?, NULL, ?)
         `);
 
             for (const row of dataRows) {
@@ -66,10 +66,11 @@ app.post("/upload", upload.single("file"), (req, res) => {
                         date: toUnixTs(row[0]),
                         description: row[1],
                         value: Math.round(row[3] * 100),
+                        source: "Conta corrente",
                     };
-                    const { date, description, value } = rowObj;
+                    const { date, description, value, source } = rowObj;
 
-                    const result = insert.run(date, description, value);
+                    const result = insert.run(date, description, value, source);
                     if (result.changes > 0) {
                         insertedCount++;
                     }
@@ -80,8 +81,8 @@ app.post("/upload", upload.single("file"), (req, res) => {
             const rows = csvData.split("\n").map((row) => row.split(","));
             const dataRows = rows.slice(1);
             const insert = db.prepare(`
-                INSERT INTO ledger (date, description, value, category)
-                VALUES (?, ?, ?, NULL)
+                INSERT INTO ledger (date, description, value, category, source)
+                VALUES (?, ?, ?, NULL, ?)
             `);
 
             for (const row of dataRows) {
@@ -90,11 +91,17 @@ app.post("/upload", upload.single("file"), (req, res) => {
                         date: toUnixTs(formatDate(row[0])),
                         description: row[1],
                         value: Math.round(parseFloat(row[2]) * -100),
+                        source: "Cartão de crédito",
                     };
-                    const { date, description, value } = rowObj;
+                    const { date, description, value, source } = rowObj;
 
                     if (!isNaN(date)) {
-                        const result = insert.run(date, description, value);
+                        const result = insert.run(
+                            date,
+                            description,
+                            value,
+                            source
+                        );
                         if (result.changes > 0) {
                             insertedCount++;
                         }
@@ -199,7 +206,7 @@ app.delete("/rules/:id", (req, res) => {
 
 app.get("/ledger", (req, res) => {
     try {
-        const { start, end, direction, categories } = req.query;
+        const { start, end, direction, categories, source } = req.query;
         let query = "SELECT * FROM ledger";
         const conditions = [];
         const params = {};
@@ -227,6 +234,14 @@ app.get("/ledger", (req, res) => {
             const placeholders = list.map((_, i) => `@cat${i}`);
             list.forEach((cat, i) => (params[`cat${i}`] = cat));
             conditions.push(`category IN (${placeholders.join(",")})`);
+        }
+
+        // Filter by source
+        if (source) {
+            const sources = source.split(","); // allow multiple sources if comma separated
+            const sourcePlaceholders = sources.map((_, i) => `@source${i}`);
+            sources.forEach((src, i) => (params[`source${i}`] = src));
+            conditions.push(`source IN (${sourcePlaceholders.join(",")})`);
         }
 
         if (conditions.length) {

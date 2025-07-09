@@ -15,7 +15,8 @@ db.exec(`
     description TEXT,
     value INTEGER,
     category TEXT,
-    UNIQUE(date, description, value) ON CONFLICT IGNORE
+    source TEXT,
+    UNIQUE(date, description, value, source) ON CONFLICT IGNORE
   );
 `);
 

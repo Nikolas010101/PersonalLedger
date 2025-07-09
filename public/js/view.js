@@ -59,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option value="">-- Select --</option>
                     </select>
                 </td>
+                <td>${row.source || ""}</td>
             `;
             tableBody.appendChild(tr);
         });
@@ -173,4 +174,52 @@ document.addEventListener("DOMContentLoaded", () => {
         // Next
         createButton("»", currentPage + 1, currentPage === totalPages);
     }
+
+    document.getElementById("exportBtn").addEventListener("click", async () => {
+        try {
+            const res = await fetch("/ledger");
+            const { data } = await res.json();
+
+            if (!data || !data.length) {
+                alert("No data available to download.");
+                return;
+            }
+
+            const headers = ["Date", "Description", "Value", "Category", "Source"];
+            const rows = data.map((item) => [
+                item.date,
+                item.description || "",
+                item.value,
+                item.category || "",
+                item.source || "",
+            ]);
+
+            const csvContent = [
+                headers.join(","),
+                ...rows.map((r) =>
+                    r
+                        .map(
+                            (val) =>
+                                `"${String(val).replace(/"/g, '""').trim()}"`
+                        )
+                        .join(",")
+                ),
+            ].join("\n");
+
+            const blob = new Blob([csvContent], {
+                type: "text/csv;charset=utf-8;",
+            });
+
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "all-transactions.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } catch (err) {
+            console.error("Failed to download CSV:", err);
+            alert("An error occurred while downloading the CSV.");
+        }
+    });
 });
