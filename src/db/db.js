@@ -30,9 +30,14 @@ db.exec(`
 db.exec(`
   CREATE TABLE IF NOT EXISTS rules (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    pattern TEXT NOT NULL,
-    category TEXT NOT NULL,
-    direction TEXT DEFAULT 'all'
+    like_pattern TEXT,
+    not_like_pattern TEXT,
+    lower_bound INTEGER,
+    upper_bound INTEGER,
+    direction TEXT DEFAULT 'all',
+    update_mode TEXT DEFAULT 'empty_only',
+    source TEXT DEFAULT 'all',
+    category TEXT NOT NULL
 );
 `);
 

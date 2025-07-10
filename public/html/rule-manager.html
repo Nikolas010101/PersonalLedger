@@ -11,18 +11,47 @@
         <form id="ruleForm">
             <input
                 type="text"
-                id="pattern"
-                placeholder="Description Pattern"
-                required
+                id="like_pattern"
+                placeholder="LIKE Pattern (e.g. Uber)"
+            />
+            <input
+                type="text"
+                id="not_like_pattern"
+                placeholder="NOT LIKE Pattern (e.g. Eats)"
             />
             <select id="direction" required>
                 <option value="">Select a Direction</option>
-                <option value="all" selected>All</option>
+                <option value="all">All</option>
                 <option value="debit">Debit</option>
                 <option value="credit">Credit</option>
             </select>
+            <input
+                type="number"
+                step="0.01"
+                id="lower_bound"
+                placeholder="Lower Bound (optional)"
+            />
+            <input
+                type="number"
+                step="0.01"
+                id="upper_bound"
+                placeholder="Upper Bound (optional)"
+            />
+
+            <select id="update_mode" required>
+                <option value="">Select Update Mode</option>
+                <option value="empty_only">Empty only</option>
+                <option value="filled_only">Filled only</option>
+                <option value="all">All</option>
+            </select>
+            <select id="source" required>
+                <option value="">Select Source</option>
+                <option value="all">All</option>
+                <option value="Cartão de crédito">Cartão de crédito</option>
+                <option value="Conta corrente">Conta corrente</option>
+            </select>
             <select id="category" required>
-                <option value="">Select Category</option>
+                <option value="">Select Category to Apply</option>
             </select>
             <button type="submit">Add Rule</button>
         </form>
