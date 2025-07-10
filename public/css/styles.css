@@ -222,10 +222,12 @@ input[type="file"] {
 .charts-container {
     display: flex;
     justify-content: center;
+    width: 80%;
     align-items: flex-start;
     gap: 30px;
     margin-top: 20px;
     flex-wrap: nowrap;
+    justify-self: center;
 }
 
 .chart-box {

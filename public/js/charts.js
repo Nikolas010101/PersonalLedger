@@ -141,8 +141,16 @@ document.addEventListener("DOMContentLoaded", () => {
                 datasets: [
                     {
                         data: groupValues,
-                        backgroundColor: "rgba(54, 162, 235, 0.7)",
-                        borderColor: "rgba(54, 162, 235, 1)",
+                        backgroundColor: groupValues.map((val) =>
+                            val >= 0
+                                ? "rgba(76, 175, 80, 0.7)"
+                                : "rgba(244, 67, 54, 0.7)"
+                        ),
+                        borderColor: groupValues.map((val) =>
+                            val >= 0
+                                ? "rgba(76, 175, 80, 1)"
+                                : "rgba(244, 67, 54, 1)"
+                        ),
                         borderWidth: 1,
                         categories: groupCategories,
                     },
@@ -173,10 +181,33 @@ document.addEventListener("DOMContentLoaded", () => {
                 },
                 plugins: {
                     legend: { display: false },
+                    title: {
+                        display: true,
+                        text: "Cash Flow",
+                        font: {
+                            size: 16,
+                            weight: "bold",
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20,
+                        },
+                    },
                     tooltip: {
+                        mode: "nearest",
+                        intersect: false,
                         callbacks: {
                             label: (context) => {
                                 const value = context.parsed.y;
+                                // Format the number with commas, and 2 decimals fixed
+                                const formattedValue = new Intl.NumberFormat(
+                                    undefined,
+                                    {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                    }
+                                ).format(value);
+
                                 const categories =
                                     context.dataset.categories?.[
                                         context.dataIndex
@@ -186,13 +217,13 @@ document.addEventListener("DOMContentLoaded", () => {
                                     Array.isArray(categories) &&
                                     categories.length > 1
                                 ) {
-                                    return `Amount: ${value}\nCategories: Multiple categories`;
+                                    return `Amount: ${formattedValue}\nCategory: Multiple categories`;
                                 }
 
                                 const category = Array.isArray(categories)
                                     ? categories[0]
                                     : categories || "No category";
-                                return `Amount: ${value}\nCategory: ${category}`;
+                                return `Amount: ${formattedValue}\nCategory: ${category}`;
                             },
                         },
                     },
@@ -207,11 +238,43 @@ document.addEventListener("DOMContentLoaded", () => {
                 datasets: [
                     {
                         data: catValues,
-                        backgroundColor: catLabels.map(
-                            () => `hsl(${Math.random() * 360}, 70%, 70%)`
-                        ),
+                        backgroundColor: catLabels.map((cat, i) => {
+                            const value = catValues[i];
+                            const sat = 10 + Math.random() * 90; // 10%–100% saturation
+                            const light = 10 + Math.random() * 80; // 10%–90% lightness
+
+                            if (value < 0) {
+                                return `hsl(0, ${sat}%, ${light}%)`;
+                            } else {
+                                return `hsl(120, ${sat}%, ${light}%)`;
+                            }
+                        }),
                     },
                 ],
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    tooltip: {
+                        mode: "nearest",
+                        intersect: false,
+                    },
+                    legend: {
+                        position: "bottom",
+                    },
+                    title: {
+                        display: true,
+                        text: "Income and Expenses by Category",
+                        font: {
+                            size: 16,
+                            weight: "bold",
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20,
+                        },
+                    },
+                },
             },
         });
 
@@ -251,11 +314,39 @@ document.addEventListener("DOMContentLoaded", () => {
                             display: true,
                             text: "Balance",
                         },
+                        grid: {
+                            lineWidth: (context) => {
+                                // context.tick.value is the value of the grid line
+                                return context.tick.value === 0 ? 3 : 1;
+                            },
+                            color: (context) => {
+                                // You can also highlight zero line with a different color if you want
+                                return context.tick.value === 0
+                                    ? "#000000"
+                                    : "#e0e0e0";
+                            },
+                        },
                     },
                 },
                 plugins: {
+                    tooltip: {
+                        mode: "nearest",
+                        intersect: false,
+                    },
                     legend: {
                         display: false,
+                    },
+                    title: {
+                        display: true,
+                        text: "Estimated Cumulative Balance Over Time",
+                        font: {
+                            size: 16,
+                            weight: "bold",
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20,
+                        },
                     },
                 },
             },
@@ -275,8 +366,24 @@ document.addEventListener("DOMContentLoaded", () => {
             options: {
                 responsive: true,
                 plugins: {
+                    tooltip: {
+                        mode: "nearest",
+                        intersect: true,
+                    },
                     legend: {
                         position: "bottom",
+                    },
+                    title: {
+                        display: true,
+                        text: "Income vs. Expenses",
+                        font: {
+                            size: 16,
+                            weight: "bold",
+                        },
+                        padding: {
+                            top: 10,
+                            bottom: 20,
+                        },
                     },
                 },
             },
