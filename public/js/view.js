@@ -185,13 +185,21 @@ document.addEventListener("DOMContentLoaded", () => {
                 return;
             }
 
-            const headers = ["Date", "Description", "Value", "Category", "Source"];
+            const headers = [
+                "Date",
+                "Description",
+                "Value",
+                "Category",
+                "Source",
+                "ID",
+            ];
             const rows = data.map((item) => [
                 item.date,
                 item.description || "",
                 item.value,
                 item.category || "",
                 item.source || "",
+                item.id || "",
             ]);
 
             const csvContent = [
@@ -213,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const url = URL.createObjectURL(blob);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "all-transactions.csv";
+            a.download = "ledger.csv";
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
