@@ -23,10 +23,11 @@ db.exec(`
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS rates (
+    id INTEGER NOT NULL,
     date INTEGER NOT NULL,
     currency TEXT NOT NULL,
-    buying_rate INTEGER,
-    selling_rate INTEGER,
+    buying_rate TEXT,
+    selling_rate TEXT,
     UNIQUE(date, currency) ON CONFLICT REPLACE
   );
 `);

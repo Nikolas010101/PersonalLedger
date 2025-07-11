@@ -1,7 +1,7 @@
 import * as XLSX from "xlsx";
 import { readFileSync } from "fs";
 import { extname } from "path";
-import { toUnixTs, formatDate } from "./dateUtils.js";
+import { fromDdMmYyyyToUnixTs, fromYyyyMmDdToDdMmYyyy } from "./dateUtils.js";
 
 function parseXLS(filePath, db) {
     const fileBuffer = readFileSync(filePath);
@@ -20,7 +20,7 @@ function parseXLS(filePath, db) {
     for (const row of dataRows) {
         if (row[3] !== "") {
             const rowObj = {
-                date: toUnixTs(row[0]),
+                date: fromDdMmYyyyToUnixTs(row[0]),
                 description: row[1],
                 value: Math.round(row[3] * 100),
                 source: "Conta corrente",
@@ -49,7 +49,7 @@ function parseCSV(filePath, db) {
     for (const row of dataRows) {
         if (row[2] !== "" && row[1] !== "PAGAMENTO EFETUADO") {
             const rowObj = {
-                date: toUnixTs(formatDate(row[0])),
+                date: fromDdMmYyyyToUnixTs(fromYyyyMmDdToDdMmYyyy(row[0])),
                 description: row[1],
                 value: Math.round(parseFloat(row[2]) * -100),
                 source: "Cartão de crédito",

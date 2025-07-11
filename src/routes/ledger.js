@@ -1,5 +1,9 @@
 import express from "express";
 import db from "../db/db.js";
+import {
+    fromIsoDateToUnixTs,
+    fromUnixTsToDdMmYyyy,
+} from "../utils/dateUtils.js";
 
 const router = express.Router();
 
@@ -12,11 +16,11 @@ router.get("/", (req, res) => {
 
         if (start) {
             conditions.push("date >= @start");
-            params.start = Math.floor(new Date(start).getTime() / 1000);
+            params.start = fromIsoDateToUnixTs(start);
         }
         if (end) {
             conditions.push("date <= @end");
-            params.end = Math.floor(new Date(end).getTime() / 1000);
+            params.end = fromIsoDateToUnixTs(end);
         }
         if (direction === "debit") conditions.push("value < 0");
         if (direction === "credit") conditions.push("value > 0");
@@ -45,7 +49,7 @@ router.get("/", (req, res) => {
         const formatted = rows.map((r) => ({
             ...r,
             value: (r.value / 100).toFixed(2),
-            date: new Date(r.date * 1000).toLocaleDateString("en-GB"),
+            date: fromUnixTsToDdMmYyyy(r.date),
         }));
 
         res.json({ data: formatted });

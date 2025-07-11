@@ -7,6 +7,7 @@ import uploadRoutes from "./routes/upload.js";
 import ledgerRoutes from "./routes/ledger.js";
 import categoriesRoutes from "./routes/categories.js";
 import rulesRoutes from "./routes/rules.js";
+import ratesRoutes from "./routes/rates.js";
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -20,6 +21,7 @@ app.use("/upload", uploadRoutes);
 app.use("/ledger", ledgerRoutes);
 app.use("/categories", categoriesRoutes);
 app.use("/rules", rulesRoutes);
+app.use("/rates", ratesRoutes);
 
 const htmlDir = join(__dirname, "..", "public", "html");
 
