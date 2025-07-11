@@ -59,6 +59,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         <option value="">-- Select --</option>
                     </select>
                 </td>
+                <td>${row.currency || ""}</td>
                 <td>${row.source || ""}</td>
             `;
             tableBody.appendChild(tr);
@@ -190,6 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 "Description",
                 "Value",
                 "Category",
+                "Currency",
                 "Source",
                 "ID",
             ];
@@ -198,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 item.description || "",
                 item.value,
                 item.category || "",
+                item.currency,
                 item.source || "",
                 item.id || "",
             ]);

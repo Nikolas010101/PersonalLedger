@@ -16,7 +16,18 @@ db.exec(`
     value INTEGER,
     category TEXT,
     source TEXT,
-    UNIQUE(date, description, value, source) ON CONFLICT IGNORE
+    currency TEXT NOT NULL,
+    UNIQUE(date, description, value, source, currency) ON CONFLICT IGNORE
+  );
+`);
+
+db.exec(`
+  CREATE TABLE IF NOT EXISTS rates (
+    date INTEGER NOT NULL,
+    currency TEXT NOT NULL,
+    buying_rate INTEGER,
+    selling_rate INTEGER,
+    UNIQUE(date, currency) ON CONFLICT REPLACE
   );
 `);
 
@@ -37,6 +48,7 @@ db.exec(`
     direction TEXT DEFAULT 'all',
     update_mode TEXT DEFAULT 'empty_only',
     source TEXT DEFAULT 'all',
+    currency TEXT DEFAULT 'all',
     category TEXT NOT NULL
 );
 `);

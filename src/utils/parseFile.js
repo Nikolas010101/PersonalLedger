@@ -12,8 +12,8 @@ function parseXLS(filePath, db) {
 
     const dataRows = rows.slice(9);
     const insert = db.prepare(`
-        INSERT INTO ledger (date, description, value, category, source)
-        VALUES (?, ?, ?, NULL, ?)
+        INSERT INTO ledger (date, description, value, category, source, currency)
+        VALUES (?, ?, ?, NULL, ?, ?)
     `);
 
     let insertedCount = 0;
@@ -26,7 +26,7 @@ function parseXLS(filePath, db) {
                 source: "Conta corrente",
             };
             const { date, description, value, source } = rowObj;
-            const result = insert.run(date, description, value, source);
+            const result = insert.run(date, description, value, source, "BRL");
             if (result.changes > 0) insertedCount++;
         }
     }
@@ -41,8 +41,8 @@ function parseCSV(filePath, db) {
     const dataRows = rows.slice(1);
 
     const insert = db.prepare(`
-        INSERT INTO ledger (date, description, value, category, source)
-        VALUES (?, ?, ?, NULL, ?)
+        INSERT INTO ledger (date, description, value, category, source, currency)
+        VALUES (?, ?, ?, NULL, ?, ?)
     `);
 
     let insertedCount = 0;
@@ -56,7 +56,13 @@ function parseCSV(filePath, db) {
             };
             const { date, description, value, source } = rowObj;
             if (!isNaN(date)) {
-                const result = insert.run(date, description, value, source);
+                const result = insert.run(
+                    date,
+                    description,
+                    value,
+                    source,
+                    "BRL"
+                );
                 if (result.changes > 0) insertedCount++;
             }
         }
