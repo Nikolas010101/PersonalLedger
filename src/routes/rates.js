@@ -7,64 +7,74 @@ const router = express.Router();
 
 router.post("/update", async (req, res) => {
     try {
-        const row = db.prepare("SELECT MAX(id) as maxId FROM rates").get();
-        let maxId = row.maxId || 1;
+        const url =
+            "https://ptax.bcb.gov.br/ptax_internet/consultaBoletim.do?method=consultarBoletim";
 
-        const BATCH_SIZE = 1000;
-        const MAX_ID = maxId + 10000;
-        const CONSECUTIVE_ERROR_LIMIT = 100;
+        const latestRow = db
+            .prepare("SELECT MAX(date) AS latest FROM rates")
+            .get();
+
+        const startDate = latestRow?.latest
+            ? new Date(latestRow.latest * 1000)
+            : new Date(1984, 10, 29);
+
+        const today = new Date();
+        let currentDate = new Date(startDate);
 
         const insertRate = db.prepare(`
-            INSERT INTO rates (id, date, currency, buying_rate, selling_rate)
-            VALUES (@id, @date, @currency, @buying_rate, @selling_rate)
+            INSERT INTO rates (date, currency, buying_rate, selling_rate)
+            VALUES (@date, @currency, @buying_rate, @selling_rate)
         `);
-        const insertMany = db.transaction((rates) => {
-            for (const rate of rates) {
+
+        const insertMany = db.transaction((rows) => {
+            for (const rate of rows) {
                 insertRate.run(rate);
             }
         });
 
-        let consecutiveErrors = 0;
+        while (currentDate <= today) {
+            const dateStr = currentDate.toLocaleDateString("pt-BR");
 
-        for (let i = maxId; i <= MAX_ID; i += BATCH_SIZE) {
-            const ids = Array.from({ length: BATCH_SIZE }, (_, j) => i + j);
+            const payload = new URLSearchParams({
+                RadOpcao: "2",
+                DATAINI: dateStr,
+                DATAFIM: "",
+                ChkMoeda: "61",
+            });
 
-            const results = await Promise.allSettled(
-                ids.map((id) =>
-                    fetchAndParseRateFile(id).catch((err) => {
-                        console.error(
-                            `Fetch failed for id ${id}:`,
-                            err.message
-                        );
-                        return null;
-                    })
-                )
-            );
+            try {
+                const response = await fetch(url, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/x-www-form-urlencoded",
+                    },
+                    body: payload.toString(),
+                });
 
-            const allRates = [];
-            for (const result of results) {
-                if (result.status === "fulfilled" && result.value) {
-                    allRates.push(...result.value);
+                const html = await response.text();
+                const match = html.match(
+                    /href="(\/ptax_internet\/consultaBoletim\.do[^"]*)"/
+                );
+
+                if (!match) {
+                    console.warn(`No data for ${dateStr}`);
                 } else {
-                    consecutiveErrors++;
+                    const url = `https://ptax.bcb.gov.br${match[1]}`;
+                    const data = await fetchAndParseRateFile(url);
+                    insertMany(data);
+                    console.log(`Inserted data for ${dateStr}`);
                 }
+            } catch (err) {
+                console.error(`Failed for ${dateStr}:`, err.message);
             }
 
-            if (allRates.length > 0) {
-                insertMany(allRates);
-                consecutiveErrors = 0;
-            }
-
-            if (consecutiveErrors >= CONSECUTIVE_ERROR_LIMIT) {
-                console.warn("Too many consecutive errors. Stopping early.");
-                break;
-            }
+            currentDate.setDate(currentDate.getDate() + 1);
         }
 
-        res.json({ res: "done" });
-    } catch (error) {
-        console.error("Unexpected error:", error);
-        res.status(500).json({ error: "Internal server error" });
+        res.json({ success: true, message: "Update complete" });
+    } catch (err) {
+        console.error("Fatal error in /update:", err);
+        res.status(500).send("Internal Server Error");
     }
 });
 
