@@ -1,6 +1,7 @@
 import express from "express";
 import db from "../db/db.js";
 import { fetchAndParseRateFile } from "../utils/parseRates.js";
+import { fromUnixTsToDdMmYyyy } from "../utils/dateUtils.js";
 
 const router = express.Router();
 
@@ -64,6 +65,59 @@ router.post("/update", async (req, res) => {
     } catch (error) {
         console.error("Unexpected error:", error);
         res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+router.get("/", (req, res) => {
+    try {
+        const { currencies, start, end } = req.query;
+
+        const filters = [];
+        const params = {};
+
+        if (currencies) {
+            const list = currencies
+                .split(",")
+                .map((c) => c.trim().toUpperCase());
+            filters.push(
+                `currency IN (${list.map((_, i) => `@c${i}`).join(", ")})`
+            );
+            list.forEach((curr, i) => {
+                params[`c${i}`] = curr;
+            });
+        }
+
+        if (start) {
+            const startDate = new Date(start);
+            if (!isNaN(startDate)) {
+                filters.push(`date >= @start`);
+                params.start = Math.floor(startDate.getTime() / 1000);
+            }
+        }
+
+        if (end) {
+            const endDate = new Date(end);
+            if (!isNaN(endDate)) {
+                filters.push(`date <= @end`);
+                params.end = Math.floor(endDate.getTime() / 1000);
+            }
+        }
+
+        const whereClause =
+            filters.length > 0 ? `WHERE ${filters.join(" AND ")}` : "";
+        const query = `SELECT * FROM rates ${whereClause} ORDER BY date DESC, currency ASC`;
+
+        const rows = db.prepare(query).all(params);
+
+        const formatted = rows.map((row) => ({
+            ...row,
+            date: fromUnixTsToDdMmYyyy(row.date),
+        }));
+
+        res.json({ data: formatted });
+    } catch (error) {
+        console.error("Failed to fetch rates:", error);
+        res.status(500).json({ error: "Failed to fetch rates" });
     }
 });
 

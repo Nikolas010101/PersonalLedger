@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
     let data = [];
     let filtered = [];
     let currentPage = 1;
+    let categoriesCache = null;
 
     fetch("/ledger")
         .then((res) => res.json())
@@ -67,15 +68,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function populateCategories() {
-        const res = await fetch("/categories");
-        const { data: categories } = await res.json();
+        if (!categoriesCache) {
+            const res = await fetch("/categories");
+            const { data } = await res.json();
+            categoriesCache = data;
+        }
 
         document.querySelectorAll(".category-select").forEach((select) => {
             const rowId = select.getAttribute("data-id");
             const currentCategory =
                 data.find((d) => d.id == rowId)?.category ?? "";
 
-            categories.forEach((cat) => {
+            categoriesCache.forEach((cat) => {
                 const opt = document.createElement("option");
                 opt.value = cat.name;
                 opt.textContent = cat.name;
@@ -84,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             select.addEventListener("change", async (e) => {
-                await fetch("/set-category", {
+                await fetch("/ledger/set-category", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -178,9 +182,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     document.getElementById("exportBtn").addEventListener("click", async () => {
         try {
-            const res = await fetch("/ledger");
-            const { data } = await res.json();
-
             if (!data || !data.length) {
                 alert("No data available to download.");
                 return;

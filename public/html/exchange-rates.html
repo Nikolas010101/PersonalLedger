@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <title>Exchange Rates</title>
+        <link rel="stylesheet" href="/css/styles.css" />
+    </head>
+    <body>
+        <h1>Exchange Rates</h1>
+
+        <div class="filters">
+            <label>Start Date: <input type="date" id="startDate" /></label>
+            <label>End Date: <input type="date" id="endDate" /></label>
+            <label>
+                Currency:
+                <select id="currencyFilter" multiple>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                    <option value="GBP">GBP</option>
+                    <option value="CNY">CNY</option>
+                </select>
+            </label>
+            <button id="applyFilters">Apply Filters</button>
+        </div>
+
+        <table id="ratesTable">
+            <thead>
+                <tr>
+                    <th style="text-align: left">Date</th>
+                    <th style="text-align: left">Currency</th>
+                    <th>Buying Rate</th>
+                    <th>Selling Rate</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
+
+        <div id="pagination" class="pagination"></div>
+
+        <div class="link-container">
+            <a href="/">Home</a>
+            <a href="/view">View Transactions</a>
+            <a href="/exchange-rates">Exchange Rates</a>
+            <a href="/charts">Charts</a>
+            <a href="/category-manager">Manage Categories</a>
+            <a href="/rule-manager">Manage Rules</a>
+        </div>
+
+        <script src="/js/exchange-rates.js"></script>
+    </body>
+</html>
