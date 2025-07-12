@@ -10,7 +10,27 @@ const router = express.Router();
 router.get("/", (req, res) => {
     try {
         const { start, end, direction, categories, source } = req.query;
-        let query = "SELECT * FROM ledger";
+        let query = `SELECT
+                        l.id,
+                        l.date,
+                        l.description,
+                        l.value AS value_fx,
+                        l.category,
+                        l.source,
+                        l.currency,
+                        CASE
+                            WHEN l.currency = 'BRL' THEN l.value
+                            ELSE l.value * (
+                                SELECT r.buying_rate
+                                FROM rates r
+                                WHERE r.currency = l.currency
+                                AND r.date <= l.date
+                                ORDER BY r.date DESC
+                                LIMIT 1
+                            )
+                        END AS value_brl
+                    FROM ledger l
+        `;
         const conditions = [];
         const params = {};
 
@@ -48,7 +68,8 @@ router.get("/", (req, res) => {
         const rows = db.prepare(query).all(params);
         const formatted = rows.map((r) => ({
             ...r,
-            value: (r.value / 100).toFixed(2),
+            value_brl: (r.value_brl / 100).toFixed(2),
+            value_fx: (r.value_fx / 100).toFixed(2),
             date: fromUnixTsToDdMmYyyy(r.date),
         }));
 
@@ -61,9 +82,7 @@ router.get("/", (req, res) => {
 
 router.get("/sources", (req, res) => {
     const sources = db
-        .prepare(
-            "SELECT DISTINCT source FROM ledger ORDER BY source ASC"
-        )
+        .prepare("SELECT DISTINCT source FROM ledger ORDER BY source ASC")
         .all()
         .map((row) => row.source);
 

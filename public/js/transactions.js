@@ -49,9 +49,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const tr = document.createElement("tr");
             tr.innerHTML = `
                 <td>${row.date}</td>
-                <td>${row.description}</td>
+                <td>${
+                    row.description.length <= 50
+                        ? row.description
+                        : row.description.slice(0, 50) + "..."
+                }</td>
                 <td style="text-align: right;">${parseFloat(
-                    row.value
+                    row.value_brl
                 ).toLocaleString("pt-BR", {
                     minimumFractionDigits: 2,
                 })}</td>
@@ -61,6 +65,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     </select>
                 </td>
                 <td>${row.currency || ""}</td>
+                <td style="text-align: right;">${parseFloat(
+                    row.value_fx
+                ).toLocaleString("pt-BR", {
+                    minimumFractionDigits: 2,
+                })}</td>
                 <td>${row.source || ""}</td>
             `;
             tableBody.appendChild(tr);
@@ -190,18 +199,20 @@ document.addEventListener("DOMContentLoaded", () => {
             const headers = [
                 "Date",
                 "Description",
-                "Value",
+                "BRL Value",
                 "Category",
                 "Currency",
+                "Foreign Currency Value",
                 "Source",
                 "ID",
             ];
             const rows = data.map((item) => [
                 item.date,
                 item.description || "",
-                item.value,
+                item.value_brl,
                 item.category || "",
                 item.currency,
+                item.value_fx,
                 item.source || "",
                 item.id || "",
             ]);

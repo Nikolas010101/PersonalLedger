@@ -24,10 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch("/categories");
         const json = await res.json();
         json.data.forEach((cat) => {
-            const opt = document.createElement("option");
-            opt.value = cat.name;
-            opt.textContent = cat.name;
-            categoryFilter.appendChild(opt);
+            const option = document.createElement("option");
+            option.value = cat.name;
+            option.textContent = cat.name;
+            categoryFilter.appendChild(option);
         });
     }
 
@@ -106,7 +106,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 byGroup[groupKey] = 0;
                 categoriesByGroup[groupKey] = new Set();
             }
-            byGroup[groupKey] += parseFloat(row.value);
+            byGroup[groupKey] += parseFloat(row.value_brl);
             categoriesByGroup[groupKey].add(row.category);
         });
 
@@ -126,14 +126,14 @@ document.addEventListener("DOMContentLoaded", () => {
         const byCategory = {};
         data.forEach((row) => {
             if (!byCategory[row.category]) byCategory[row.category] = 0;
-            byCategory[row.category] += parseFloat(row.value);
+            byCategory[row.category] += parseFloat(row.value_brl);
         });
 
         let totalIncome = 0;
         let totalExpense = 0;
 
         data.forEach((row) => {
-            const val = parseFloat(row.value);
+            const val = parseFloat(row.value_brl);
             if (val > 0) {
                 totalIncome += val;
             } else {
