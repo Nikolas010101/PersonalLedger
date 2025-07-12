@@ -110,7 +110,39 @@ document.addEventListener("DOMContentLoaded", () => {
             categoriesByGroup[groupKey].add(row.category);
         });
 
-        const groupLabels = Object.keys(byGroup).sort();
+        const groupLabels = Object.keys(byGroup).sort((a, b) => {
+            const groupBy = groupBySelect.value;
+
+            const parseDateKey = (key) => {
+                switch (groupBy) {
+                    case "day":
+                        const [day, month, year] = key.split("/").map(Number);
+                        return new Date(year, month - 1, day);
+                    case "month":
+                        return new Date(key + "-01");
+                    case "year":
+                        return new Date(key + "-01-01");
+                    case "week":
+                        const [y, w] = key.split("-W").map(Number);
+                        const simple = new Date(y, 0, 1 + (w - 1) * 7);
+                        const dow = simple.getDay();
+                        const ISOweekStart = simple;
+                        if (dow <= 4)
+                            ISOweekStart.setDate(
+                                simple.getDate() - simple.getDay() + 1
+                            );
+                        else
+                            ISOweekStart.setDate(
+                                simple.getDate() + 8 - simple.getDay()
+                            );
+                        return ISOweekStart;
+                    default:
+                        return new Date(key);
+                }
+            };
+
+            return parseDateKey(a) - parseDateKey(b);
+        });
 
         let cumulativeBalance = 0;
         const cumulativeValues = groupLabels.map((label) => {

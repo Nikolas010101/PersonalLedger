@@ -25,6 +25,11 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    function parseDDMMYYYY(dateStr) {
+        const [dd, mm, yyyy] = dateStr.split("/");
+        return new Date(`${yyyy}-${mm}-${dd}`);
+    }
+
     async function loadDataAndRenderCharts() {
         let selected = Array.from(currencyFilter.selectedOptions).map(
             (opt) => opt.value
@@ -52,7 +57,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ratesByCurrency[entry.currency].push(entry);
         });
 
-        const allDates = [...new Set(data.map((d) => d.date))].sort();
+        const allDates = [...new Set(data.map((d) => d.date))].sort(
+            (a, b) => parseDDMMYYYY(a) - parseDDMMYYYY(b)
+        );
 
         const buyDatasets = [];
         const sellDatasets = [];
