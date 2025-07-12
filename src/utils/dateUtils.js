@@ -41,7 +41,7 @@ export function fromUnixTsToDdMmYyyy(unixTs) {
 
 // Converts excel date to UNIX timestamp
 export function excelDateToUnixTs(excelSerial) {
-    const excelEpoch = new Date(1899, 11, 30);
-    const jsDate = new Date(excelEpoch.getTime() + excelSerial * 86400000);
-    return Math.floor(jsDate.getTime() / 1000);
+    const excelEpoch = Date.UTC(1899, 11, 30);
+    const unixMs = excelEpoch + excelSerial * 86400000;
+    return Math.floor(unixMs / 1000);
 }
