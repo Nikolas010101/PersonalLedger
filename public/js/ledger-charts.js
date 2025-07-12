@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const categoryFilter = document.getElementById("categoryFilter");
     const groupBySelect = document.getElementById("groupBy");
     const loadChartsBtn = document.getElementById("loadCharts");
-    const sourceFilter = document.getElementById("sourceFilter");
+    const sourceFilter = document.getElementById("source");
 
     const cashflowCtx = document
         .getElementById("cashflowChart")
@@ -28,6 +28,21 @@ document.addEventListener("DOMContentLoaded", () => {
             opt.value = cat.name;
             opt.textContent = cat.name;
             categoryFilter.appendChild(opt);
+        });
+    }
+
+    async function loadSources() {
+        const res = await fetch("/ledger/sources");
+        const json = await res.json();
+        const sourceSelect = document.getElementById("source");
+        sourceSelect.innerHTML = `
+            <option value="">All</option>
+        `;
+        json.data.forEach((src) => {
+            const option = document.createElement("option");
+            option.value = src;
+            option.textContent = src;
+            sourceSelect.appendChild(option);
         });
     }
 
@@ -372,5 +387,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     loadChartsBtn.addEventListener("click", loadDataAndRenderCharts);
+
+    loadSources();
     loadCategories();
 });

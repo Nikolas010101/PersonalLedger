@@ -14,6 +14,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function loadSources() {
+        const res = await fetch("/ledger/sources");
+        const json = await res.json();
+        const sourceSelect = document.getElementById("source");
+        sourceSelect.innerHTML = `
+            <option value="">Select Source</option>
+            <option value="all">All</option>
+        `;
+        json.data.forEach((src) => {
+            const option = document.createElement("option");
+            option.value = src;
+            option.textContent = src;
+            sourceSelect.appendChild(option);
+        });
+    }
+
     const form = document.getElementById("ruleForm");
     const rulesList = document.getElementById("rulesList");
 
@@ -132,6 +148,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Updated ${json.updated} transaction(s).`);
     };
 
+    loadSources();
     loadCategories();
     loadRules();
 });

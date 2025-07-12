@@ -32,7 +32,7 @@ router.get("/", (req, res) => {
             conditions.push(`category IN (${placeholders.join(",")})`);
         }
 
-        if (source) {
+        if (source && source !== "all") {
             const list = source.split(",");
             const placeholders = list.map((_, i) => `@src${i}`);
             list.forEach((src, i) => (params[`src${i}`] = src));
@@ -57,6 +57,17 @@ router.get("/", (req, res) => {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch ledger." });
     }
+});
+
+router.get("/sources", (req, res) => {
+    const sources = db
+        .prepare(
+            "SELECT DISTINCT source FROM ledger ORDER BY source ASC"
+        )
+        .all()
+        .map((row) => row.source);
+
+    res.json({ data: sources });
 });
 
 router.post("/set-category", (req, res) => {
