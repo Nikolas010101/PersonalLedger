@@ -161,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
 
                 if (response.ok) {
-                    const result = await response.json();
+                    await response.json();
                     alert("Exchange rates fetched successfully!");
                 } else {
                     const err = await response.json();
@@ -178,6 +178,150 @@ document.addEventListener("DOMContentLoaded", () => {
                 btn.target.disabled = false;
             }
         });
-    // Initial fetch
-    fetchRates();
+
+    const manageBtn = document.getElementById("manageCurrenciesBtn");
+    const modal = document.getElementById("currencyModal");
+    const currencyCheckboxes = document.getElementById("currencyCheckboxes");
+    const currencyForm = document.getElementById("currencyForm");
+    const cancelBtn = document.getElementById("cancelCurrencyBtn");
+
+    async function fetchAllCurrencies() {
+        try {
+            const res = await fetch("/rates/currencies");
+            if (!res.ok) throw new Error("Failed to fetch unique currencies");
+            const json = await res.json();
+            return json.data.filter((curr) => curr !== "BRL");
+        } catch (e) {
+            alert("Error loading unique currencies.");
+            return [];
+        }
+    }
+
+    async function fetchAvailableCurrencies() {
+        try {
+            const res = await fetch("/rates/available_currencies");
+            if (!res.ok)
+                throw new Error("Failed to fetch available currencies");
+            const json = await res.json();
+            return json.data;
+        } catch (e) {
+            alert("Error loading available currencies.");
+            return [];
+        }
+    }
+
+    manageBtn.addEventListener("click", async () => {
+        const uniqueCurrencies = await fetchAllCurrencies();
+        const availableCurrencies = await fetchAvailableCurrencies();
+
+        currencyCheckboxes.innerHTML = "";
+
+        uniqueCurrencies.forEach((curr) => {
+            const id = `chk_${curr}`;
+            const isChecked = availableCurrencies.includes(curr);
+            const label = document.createElement("label");
+            label.htmlFor = id;
+            label.textContent = curr;
+
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.name = "currencies";
+            checkbox.value = curr;
+            checkbox.id = id;
+            checkbox.checked = isChecked;
+
+            label.prepend(checkbox);
+            currencyCheckboxes.appendChild(label);
+        });
+
+        modal.style.display = "flex";
+
+        const inputs = currencyCheckboxes.querySelectorAll(
+            "input[type=checkbox]"
+        );
+        function updateCheckboxState() {
+            const checked = [...inputs].filter((i) => i.checked);
+            inputs.forEach((input) => {
+                input.disabled = checked.length === 1 && input.checked;
+            });
+        }
+        inputs.forEach((input) =>
+            input.addEventListener("change", updateCheckboxState)
+        );
+        updateCheckboxState();
+    });
+
+    function updateCurrencyFilterOptions(currencies) {
+        currencyFilter.innerHTML = "";
+        currencies.forEach((curr) => {
+            const opt = document.createElement("option");
+            opt.value = curr;
+            opt.textContent = curr;
+            currencyFilter.appendChild(opt);
+        });
+    }
+
+    cancelBtn.addEventListener("click", () => {
+        modal.style.display = "none";
+    });
+
+    currencyForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const checkedCurrencies = Array.from(
+            currencyCheckboxes.querySelectorAll("input[type=checkbox]:checked")
+        ).map((input) => input.value);
+
+        if (checkedCurrencies.length === 0) {
+            alert("You must select at least one currency.");
+            return;
+        }
+
+        try {
+            const res = await fetch("/rates/available_currencies", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ currencies: checkedCurrencies }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to save currencies.");
+            }
+
+            alert("Available currencies updated successfully!");
+            modal.style.display = "none";
+
+            updateCurrencyFilterOptions(checkedCurrencies);
+
+            fetchRates();
+        } catch (error) {
+            alert("Error saving currencies: " + error.message);
+        }
+    });
+
+    function updateCurrencyFilterOptions(currencies) {
+        currencyFilter.innerHTML = "";
+        currencies.forEach((curr) => {
+            const opt = document.createElement("option");
+            opt.value = curr;
+            opt.textContent = curr;
+            currencyFilter.appendChild(opt);
+        });
+    }
+
+    async function initCurrencyFilter() {
+        try {
+            const availableCurrencies = await fetchAvailableCurrencies();
+            if (availableCurrencies.length === 0) {
+                const uniqueCurrencies = await fetchAllCurrencies();
+                updateCurrencyFilterOptions(uniqueCurrencies);
+            } else {
+                updateCurrencyFilterOptions(availableCurrencies);
+            }
+        } catch (e) {
+            alert("Error initializing currency filter.");
+        }
+    }
+
+    initCurrencyFilter().then(() => fetchRates());
 });

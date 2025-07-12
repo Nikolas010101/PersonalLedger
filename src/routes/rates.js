@@ -121,4 +121,58 @@ router.get("/", (req, res) => {
     }
 });
 
+router.get("/currencies", (req, res) => {
+    const currencies = db
+        .prepare(
+            "SELECT DISTINCT currency FROM rates UNION SELECT 'BRL' ORDER BY currency ASC"
+        )
+        .all()
+        .map((row) => row.currency);
+
+    res.json({ data: currencies });
+});
+
+router.get("/available_currencies", (req, res) => {
+    try {
+        const stmt = db.prepare(
+            "SELECT currency FROM available_currencies ORDER BY currency ASC"
+        );
+        const currencies = stmt.all().map((row) => row.currency);
+        res.json({ data: currencies });
+    } catch (err) {
+        console.error("Error fetching currencies:", err);
+        res.status(500).json({ error: "Failed to fetch currencies." });
+    }
+});
+
+router.post("/available_currencies", (req, res) => {
+    try {
+        const { currencies } = req.body;
+
+        if (!Array.isArray(currencies) || currencies.length === 0) {
+            return res
+                .status(400)
+                .json({ error: "Currencies must be a non-empty array." });
+        }
+
+        const insert = db.prepare(
+            "INSERT OR REPLACE INTO available_currencies (currency) VALUES (?)"
+        );
+        const clear = db.prepare("DELETE FROM available_currencies");
+
+        const transaction = db.transaction((newCurrencies) => {
+            clear.run();
+            for (const curr of newCurrencies) {
+                insert.run(curr);
+            }
+        });
+
+        transaction(currencies);
+        res.json({ success: true });
+    } catch (err) {
+        console.error("Error updating currencies:", err);
+        res.status(500).json({ error: "Failed to update currencies." });
+    }
+});
+
 export default router;

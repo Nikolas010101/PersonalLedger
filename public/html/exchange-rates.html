@@ -22,13 +22,28 @@
             <label>
                 Currency:
                 <select id="currencyFilter" multiple>
-                    <option value="USD">USD</option>
-                    <option value="EUR">EUR</option>
-                    <option value="GBP">GBP</option>
-                    <option value="CNY">CNY</option>
                 </select>
             </label>
             <button id="applyFilters">Apply Filters</button>
+        </div>
+
+        <button id="manageCurrenciesBtn" type="button">
+            Manage Available Currencies
+        </button>
+
+        <div id="currencyModal" class="modal" style="display: none">
+            <div class="modal-content">
+                <h2>Select Available Currencies</h2>
+                <form id="currencyForm">
+                    <div id="currencyCheckboxes"></div>
+                    <div style="margin-top: 10px">
+                        <button type="submit">Save</button>
+                        <button type="button" id="cancelCurrencyBtn">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
 
         <table id="ratesTable">
