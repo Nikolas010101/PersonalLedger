@@ -9,7 +9,8 @@ const router = express.Router();
 
 router.get("/", (req, res) => {
     try {
-        const { start, end, direction, categories, source } = req.query;
+        const { start, end, direction, categories, source, currency } =
+            req.query;
         let query = `SELECT
                         l.id,
                         l.date,
@@ -38,10 +39,12 @@ router.get("/", (req, res) => {
             conditions.push("date >= @start");
             params.start = fromIsoDateToUnixTs(start);
         }
+
         if (end) {
             conditions.push("date <= @end");
             params.end = fromIsoDateToUnixTs(end);
         }
+
         if (direction === "debit") conditions.push("value < 0");
         if (direction === "credit") conditions.push("value > 0");
 
@@ -57,6 +60,13 @@ router.get("/", (req, res) => {
             const placeholders = list.map((_, i) => `@src${i}`);
             list.forEach((src, i) => (params[`src${i}`] = src));
             conditions.push(`source IN (${placeholders.join(",")})`);
+        }
+
+        if (currency && currency !== "all") {
+            const list = currency.split(",");
+            const placeholders = list.map((_, i) => `@crncy${i}`);
+            list.forEach((crncy, i) => (params[`crncy${i}`] = crncy));
+            conditions.push(`currency IN (${placeholders.join(",")})`);
         }
 
         if (conditions.length) {
@@ -77,6 +87,19 @@ router.get("/", (req, res) => {
     } catch (err) {
         console.error(err);
         res.status(500).json({ error: "Failed to fetch ledger." });
+    }
+});
+
+router.get("/currencies", (req, res) => {
+    try {
+        const stmt = db.prepare(
+            "SELECT DISTINCT currency FROM ledger ORDER BY currency ASC"
+        );
+        const currencies = stmt.all().map((row) => row.currency);
+        res.json({ data: currencies });
+    } catch (err) {
+        console.error("Error fetching currencies:", err);
+        res.status(500).json({ error: "Failed to fetch currencies." });
     }
 });
 

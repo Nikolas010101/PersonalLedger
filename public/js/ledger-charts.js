@@ -1,11 +1,12 @@
 document.addEventListener("DOMContentLoaded", () => {
     const startDate = document.getElementById("startDate");
     const endDate = document.getElementById("endDate");
-    const direction = document.getElementById("direction");
+    const directionFilter = document.getElementById("directionFilter");
     const categoryFilter = document.getElementById("categoryFilter");
     const groupBySelect = document.getElementById("groupBy");
+    const currencyFilter = document.getElementById("currencyFilter");
+    const sourceFilter = document.getElementById("sourceFilter");
     const loadChartsBtn = document.getElementById("loadCharts");
-    const sourceFilter = document.getElementById("source");
 
     const cashflowCtx = document
         .getElementById("cashflowChart")
@@ -34,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadSources() {
         const res = await fetch("/ledger/sources");
         const json = await res.json();
-        const sourceSelect = document.getElementById("source");
+        const sourceSelect = document.getElementById("sourceFilter");
         sourceSelect.innerHTML = `
             <option value="">All</option>
         `;
@@ -43,6 +44,17 @@ document.addEventListener("DOMContentLoaded", () => {
             option.value = src;
             option.textContent = src;
             sourceSelect.appendChild(option);
+        });
+    }
+
+    async function loadCurrencies() {
+        const res = await fetch("/ledger/currencies");
+        const json = await res.json();
+        json.data.forEach((src) => {
+            const option = document.createElement("option");
+            option.value = src;
+            option.textContent = src;
+            currencyFilter.appendChild(option);
         });
     }
 
@@ -81,7 +93,7 @@ document.addEventListener("DOMContentLoaded", () => {
         let url = "/ledger?";
         if (startDate.value) url += `start=${startDate.value}&`;
         if (endDate.value) url += `end=${endDate.value}&`;
-        if (direction.value) url += `direction=${direction.value}&`;
+        if (directionFilter.value) url += `direction=${directionFilter.value}&`;
 
         if (sourceFilter.value)
             url += `source=${encodeURIComponent(sourceFilter.value)}&`;
@@ -90,6 +102,12 @@ document.addEventListener("DOMContentLoaded", () => {
             (o) => o.value
         );
         if (selectedCats.length) url += `categories=${selectedCats.join(",")}&`;
+
+        const selectedCurrencies = Array.from(
+            currencyFilter.selectedOptions
+        ).map((o) => o.value);
+        if (selectedCurrencies.length)
+            url += `currency=${selectedCurrencies.join(",")}&`;
 
         const groupBy = groupBySelect.value;
 
@@ -421,5 +439,6 @@ document.addEventListener("DOMContentLoaded", () => {
     loadChartsBtn.addEventListener("click", loadDataAndRenderCharts);
 
     loadSources();
+    loadCurrencies();
     loadCategories();
 });
