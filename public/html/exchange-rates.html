@@ -8,7 +8,15 @@
     <body>
         <h1>Exchange Rates</h1>
 
+        <div id="loadingMessage" style="display: none; margin-top: 10px">
+            ⏳ Fetching exchange rates... Please wait.
+        </div>
+
         <div class="filters">
+            <button id="fetchRatesBtn" type="button">
+                Fetch New Exchange Rates
+            </button>
+
             <label>Start Date: <input type="date" id="startDate" /></label>
             <label>End Date: <input type="date" id="endDate" /></label>
             <label>
