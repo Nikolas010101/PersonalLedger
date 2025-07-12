@@ -27,7 +27,7 @@ db.exec(`
     currency TEXT NOT NULL,
     buying_rate TEXT,
     selling_rate TEXT,
-    UNIQUE(date, currency) ON CONFLICT REPLACE
+    UNIQUE(date, currency) ON CONFLICT IGNORE
   );
 `);
 
