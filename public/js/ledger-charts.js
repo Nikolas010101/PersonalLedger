@@ -188,10 +188,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             size: 16,
                             weight: "bold",
                         },
-                        padding: {
-                            top: 10,
-                            bottom: 20,
-                        },
                     },
                     tooltip: {
                         mode: "nearest",
@@ -199,7 +195,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         callbacks: {
                             label: (context) => {
                                 const value = context.parsed.y;
-                                // Format the number with commas, and 2 decimals fixed
                                 const formattedValue = new Intl.NumberFormat(
                                     undefined,
                                     {
@@ -269,10 +264,6 @@ document.addEventListener("DOMContentLoaded", () => {
                             size: 16,
                             weight: "bold",
                         },
-                        padding: {
-                            top: 10,
-                            bottom: 20,
-                        },
                     },
                 },
             },
@@ -316,11 +307,9 @@ document.addEventListener("DOMContentLoaded", () => {
                         },
                         grid: {
                             lineWidth: (context) => {
-                                // context.tick.value is the value of the grid line
                                 return context.tick.value === 0 ? 3 : 1;
                             },
                             color: (context) => {
-                                // You can also highlight zero line with a different color if you want
                                 return context.tick.value === 0
                                     ? "#000000"
                                     : "#e0e0e0";
@@ -342,10 +331,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         font: {
                             size: 16,
                             weight: "bold",
-                        },
-                        padding: {
-                            top: 10,
-                            bottom: 20,
                         },
                     },
                 },
@@ -379,10 +364,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         font: {
                             size: 16,
                             weight: "bold",
-                        },
-                        padding: {
-                            top: 10,
-                            bottom: 20,
                         },
                     },
                 },
