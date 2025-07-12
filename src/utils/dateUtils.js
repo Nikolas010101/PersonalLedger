@@ -32,7 +32,11 @@ export function fromDdMmYyyyDashToUnixTs(dateStr) {
 
 // Converts UNIX timestamp to dd/mm/yyyy
 export function fromUnixTsToDdMmYyyy(unixTs) {
-    return new Date(unixTs * 1000).toLocaleDateString("en-GB");
+    const date = new Date(unixTs * 1000);
+    const day = String(date.getUTCDate()).padStart(2, "0");
+    const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+    const year = date.getUTCFullYear();
+    return `${day}/${month}/${year}`;
 }
 
 // Converts excel date to UNIX timestamp
