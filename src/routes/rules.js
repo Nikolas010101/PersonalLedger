@@ -24,6 +24,7 @@ router.post("/", (req, res) => {
         category,
         direction,
         update_mode,
+        currency,
         source,
     } = req.body;
     if (!category || !direction || (!like_pattern && !not_like_pattern)) {
@@ -32,8 +33,8 @@ router.post("/", (req, res) => {
 
     db.prepare(
         `
-        INSERT INTO rules (like_pattern, not_like_pattern, lower_bound, upper_bound, category, direction, source, update_mode)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO rules (like_pattern, not_like_pattern, lower_bound, upper_bound, category, direction, currency, source, update_mode)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `
     ).run(
         like_pattern,
@@ -42,6 +43,7 @@ router.post("/", (req, res) => {
         upper_bound != null ? Math.round(upper_bound * 100) : null,
         category,
         direction,
+        currency,
         source,
         update_mode
     );
@@ -98,6 +100,11 @@ router.post("/:id/apply", (req, res) => {
         query += ` AND value < 0`;
     } else if (rule.direction === "credit") {
         query += ` AND value > 0`;
+    }
+
+    if (rule.currency !== "all") {
+        query += ` AND currency = ?`;
+        params.push(rule.currency);
     }
 
     if (rule.source !== "all") {

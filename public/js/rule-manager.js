@@ -30,6 +30,22 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     }
 
+    async function loadCurrencies() {
+        const res = await fetch("/ledger/currencies");
+        const json = await res.json();
+        const currencySelect = document.getElementById("currency");
+        currencySelect.innerHTML = `
+            <option value="">Select Currency</option>
+            <option value="all">All</option>
+        `;
+        json.data.forEach((src) => {
+            const option = document.createElement("option");
+            option.value = src;
+            option.textContent = src;
+            currencySelect.appendChild(option);
+        });
+    }
+
     const form = document.getElementById("ruleForm");
     const rulesList = document.getElementById("rulesList");
 
@@ -64,6 +80,9 @@ document.addEventListener("DOMContentLoaded", () => {
                     }</span></div>
                     <div><strong>Update Mode:</strong> <span>${
                         rule.update_mode
+                    }</span></div>
+                    <div><strong>Currency:</strong> <span>${
+                        rule.currency
                     }</span></div>
                     <div><strong>Source:</strong> <span>${
                         rule.source
@@ -110,6 +129,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const category = categorySelect.value.trim();
         const direction = directionSelect.value.trim();
         const update_mode = document.getElementById("update_mode").value.trim();
+        const currency = document.getElementById("currency").value.trim();
         const source = document.getElementById("source").value.trim();
         const lower_bound =
             parseFloat(document.getElementById("lower_bound").value) || null;
@@ -121,7 +141,8 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        if (!category || !direction || !update_mode || !source) return;
+        if (!category || !direction || !update_mode || !currency || !source)
+            return;
 
         await fetch("/rules", {
             method: "POST",
@@ -132,6 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 category,
                 direction,
                 update_mode,
+                currency,
                 source,
                 lower_bound,
                 upper_bound,
@@ -148,6 +170,7 @@ document.addEventListener("DOMContentLoaded", () => {
         alert(`Updated ${json.updated} transaction(s).`);
     };
 
+    loadCurrencies();
     loadSources();
     loadCategories();
     loadRules();

@@ -194,7 +194,7 @@ input[type="file"] {
     justify-content: center;
     align-items: center;
     margin: 20px auto;
-    max-width: 500px;
+    max-width: 80%;
     padding: 15px;
     background-color: #fff;
     border-radius: 8px;
@@ -224,6 +224,13 @@ input[type="file"] {
 
 #ruleForm button:hover {
     background-color: #0056b3;
+}
+
+.form-actions {
+    flex: 1 1 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
 }
 
 .charts-container {
