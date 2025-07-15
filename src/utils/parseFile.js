@@ -21,7 +21,7 @@ function parseXLS(filePath, db) {
         VALUES (?, ?, ?, NULL, ?, ?)
         `);
 
-    let insertedCount = 0;
+    const response = { totalCount: 0, insertedCount: 0, statementType: "" };
 
     // Itaú checking account statement format
     if (
@@ -29,17 +29,18 @@ function parseXLS(filePath, db) {
         rows?.[1]?.[0] === "Atualização:" &&
         rows?.[2]?.[0] === "Nome:" &&
         rows?.[3]?.[0] === "Agência:" &&
-        rows?.[4]?.[0] === "Conta:"
+        rows?.[4]?.[0] === "Conta:" &&
+        rows?.[6]?.[0] === "Lançamentos"
     ) {
-        console.log("itau");
+        response.statementType = "Conta corrente - Itaú";
         const dataRows = rows.slice(9);
         for (const row of dataRows) {
             if (row[3] !== "") {
                 const rowObj = {
                     date: fromDdMmYyyyToUnixTs(row[0]),
-                    description: row[1],
+                    description: row[1].toUpperCase(),
                     value: Math.round(row[3] * 100),
-                    source: "Conta corrente - Itaú",
+                    source: response.statementType,
                     currency: "BRL",
                 };
                 const { date, description, value, source, currency } = rowObj;
@@ -50,19 +51,59 @@ function parseXLS(filePath, db) {
                     source,
                     currency
                 );
-                if (result.changes > 0) insertedCount++;
+                response.totalCount++;
+                if (result.changes > 0) response.insertedCount++;
+            }
+        }
+    } // Itaú credit card statement format
+    else if (
+        rows?.[0]?.length === 1 &&
+        rows?.[1]?.[0] === "Atualização:" &&
+        rows?.[2]?.[0] === "Nome:" &&
+        rows?.[3]?.[0] === "Agência:" &&
+        rows?.[4]?.[0] === "Conta:" &&
+        rows?.[6]?.[0]?.includes("fatura")
+    ) {
+        response.statementType = "Cartão de crédito - Itaú";
+        const dataRows = rows.slice(9);
+        for (const row of dataRows) {
+            if (
+                row[0] &&
+                row[0] !== "data" &&
+                row[1] &&
+                row[1] !== "PAGAMENTO EFETUADO" &&
+                row[3]
+            ) {
+                const rowObj = {
+                    date: fromDdMmYyyyToUnixTs(row[0]),
+                    description: row[1].toUpperCase(),
+                    value: -Math.round(row[3] * 100),
+                    source: response.statementType,
+                    currency: "BRL",
+                };
+                const { date, description, value, source, currency } = rowObj;
+                const result = insert.run(
+                    date,
+                    description,
+                    value,
+                    source,
+                    currency
+                );
+                response.totalCount++;
+                if (result.changes > 0) response.insertedCount++;
             }
         }
     }
     // Wise checking account statement format
     else if (rows?.[0]?.length === 21) {
+        response.statementType = "Conta corrente - Wise";
         const dataRows = rows.slice(1);
         for (const row of dataRows) {
             const rowObj = {
                 date: excelDateToUnixTs(row[1]),
-                description: row[5],
+                description: row[5].toUpperCase(),
                 value: Math.round(parseFloat(row[3]) * 100),
-                source: "Conta corrente - Wise",
+                source: response.statementType,
                 currency: row[4],
             };
             const { date, description, value, source, currency } = rowObj;
@@ -74,11 +115,12 @@ function parseXLS(filePath, db) {
                     source,
                     currency
                 );
-                if (result.changes > 0) insertedCount++;
+                response.totalCount++;
+                if (result.changes > 0) response.insertedCount++;
             }
         }
     }
-    return insertedCount;
+    return response;
 }
 
 function parseCSV(filePath, db) {
@@ -97,7 +139,7 @@ function parseCSV(filePath, db) {
         VALUES (?, ?, ?, NULL, ?, ?)
         `);
 
-    let insertedCount = 0;
+    const response = { totalCount: 0, insertedCount: 0, statementType: "" };
     // Itaú credit card statement format
     if (
         rows?.[0]?.length === 3 &&
@@ -105,13 +147,14 @@ function parseCSV(filePath, db) {
         rows?.[0]?.[1].trim() === "lançamento" &&
         rows?.[0]?.[2].trim() === "valor"
     ) {
+        response.statementType = "Cartão de crédito - Itaú";
         for (const row of dataRows) {
             if (row[2] !== "" && row[1] !== "PAGAMENTO EFETUADO") {
                 const rowObj = {
                     date: fromDdMmYyyyToUnixTs(fromYyyyMmDdToDdMmYyyy(row[0])),
-                    description: row[1],
+                    description: row[1].toUpperCase(),
                     value: Math.round(parseFloat(row[2]) * -100),
-                    source: "Cartão de crédito - Itaú",
+                    source: response.statementType,
                     currency: "BRL",
                 };
                 const { date, description, value, source, currency } = rowObj;
@@ -123,19 +166,21 @@ function parseCSV(filePath, db) {
                         source,
                         currency
                     );
-                    if (result.changes > 0) insertedCount++;
+                    response.totalCount++;
+                    if (result.changes > 0) response.insertedCount++;
                 }
             }
         }
     }
     // Wise checking account statement format
     else if (rows?.[0]?.length === 21) {
+        response.statementType = "Conta corrente - Wise";
         for (const row of dataRows) {
             const rowObj = {
                 date: fromDdMmYyyyDashToUnixTs(row[1]),
-                description: row[5],
+                description: row[5].toUpperCase(),
                 value: Math.round(parseFloat(row[3]) * 100),
-                source: "Conta corrente - Wise",
+                source: response.statementType,
                 currency: row[4],
             };
             const { date, description, value, source, currency } = rowObj;
@@ -147,11 +192,12 @@ function parseCSV(filePath, db) {
                     source,
                     currency
                 );
-                if (result.changes > 0) insertedCount++;
+                response.totalCount++;
+                if (result.changes > 0) response.insertedCount++;
             }
         }
     }
-    return insertedCount;
+    return response;
 }
 
 export function parseFile(filePath, db, originalName) {

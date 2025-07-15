@@ -10,8 +10,8 @@ router.post("/", upload.single("file"), (req, res) => {
     try {
         const filePath = req.file.path;
         const originalName = req.file.originalname;
-        const insertedCount = parseFile(filePath, db, originalName);
-        res.json({ success: true, inserted: insertedCount });
+        const result = parseFile(filePath, db, originalName);
+        res.json({ success: true, data: result });
     } catch (err) {
         console.error("File parsing error:", err);
         res.status(500).json({ success: false, error: err.message });

@@ -14,8 +14,16 @@ document
         const formData = new FormData();
         formData.append("file", file);
 
-        fetch("/upload", {
-            method: "POST",
-            body: formData,
-        });
+        try {
+            const response = await fetch("/upload", {
+                method: "POST",
+                body: formData,
+            });
+            const result = await response.json();
+            window.alert(
+                `Statement source: ${result.data.statementType}\nTotal number of transactions in file: ${result.data.totalCount}\nNumber of transactions inserted: ${result.data.insertedCount}`
+            );
+        } catch (err) {
+            console.error("Error uploading file:", err);
+        }
     });
