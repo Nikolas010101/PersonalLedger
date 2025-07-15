@@ -4,10 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const currencyFilter = document.getElementById("currencyFilter");
     const loadChartsBtn = document.getElementById("loadCharts");
 
-    const buyCtx = document.getElementById("buyChart").getContext("2d");
-    const sellCtx = document.getElementById("sellChart").getContext("2d");
+    const buyChartDiv = document.getElementById("buyChart");
+    const sellChartDiv = document.getElementById("sellChart");
 
-    let buyChart, sellChart;
     const colorMap = {};
 
     const oneYearAgo = new Date();
@@ -28,6 +27,13 @@ document.addEventListener("DOMContentLoaded", () => {
     function parseDDMMYYYY(dateStr) {
         const [dd, mm, yyyy] = dateStr.split("/");
         return new Date(`${yyyy}-${mm}-${dd}`);
+    }
+
+    function getTickVals(dates) {
+        const maxTicks = 10;
+        if (dates.length <= maxTicks) return dates;
+        const step = Math.ceil(dates.length / maxTicks);
+        return dates.filter((_, i) => i % step === 0);
     }
 
     async function loadDataAndRenderCharts() {
@@ -61,8 +67,8 @@ document.addEventListener("DOMContentLoaded", () => {
             (a, b) => parseDDMMYYYY(a) - parseDDMMYYYY(b)
         );
 
-        const buyDatasets = [];
-        const sellDatasets = [];
+        const buyTraces = [];
+        const sellTraces = [];
 
         Object.entries(ratesByCurrency).forEach(([currency, records]) => {
             const dateMap = Object.fromEntries(records.map((r) => [r.date, r]));
@@ -73,75 +79,70 @@ document.addEventListener("DOMContentLoaded", () => {
 
             const datasetColor = colorMap[currency];
 
-            buyDatasets.push({
-                label: currency,
-                data: allDates.map((d) => dateMap[d]?.buying_rate ?? null),
-                borderColor: datasetColor,
-                backgroundColor: datasetColor,
-                tension: 0.2,
+            const buyData = allDates.map(
+                (d) => dateMap[d]?.buying_rate ?? null
+            );
+            const sellData = allDates.map(
+                (d) => dateMap[d]?.selling_rate ?? null
+            );
+
+            buyTraces.push({
+                x: allDates,
+                y: buyData,
+                mode: "lines+markers",
+                name: currency,
+                line: { color: datasetColor },
+                connectgaps: false,
             });
 
-            sellDatasets.push({
-                label: currency,
-                data: allDates.map((d) => dateMap[d]?.selling_rate ?? null),
-                borderColor: datasetColor,
-                backgroundColor: datasetColor,
-                tension: 0.2,
+            sellTraces.push({
+                x: allDates,
+                y: sellData,
+                mode: "lines+markers",
+                name: currency,
+                line: { color: datasetColor },
+                connectgaps: false,
             });
         });
 
-        if (buyChart) buyChart.destroy();
-        if (sellChart) sellChart.destroy();
-
-        const commonOptions = (title) => ({
-            responsive: true,
-            maintainAspectRatio: false,
-            resize: true,
-            plugins: {
-                tooltip: {
-                    mode: "nearest",
-                    intersect: false,
-                },
-                title: {
-                    display: true,
-                    text: title,
-                    font: { size: 16, weight: "bold" },
-                },
-                legend: {
-                    display: true,
-                    position: "bottom",
-                },
+        const layoutTemplate = (title, yTitle) => ({
+            title,
+            autosize: true,
+            xaxis: {
+                title: "Date",
+                tickmode: "array",
+                tickvals: getTickVals(allDates),
+                ticktext: getTickVals(allDates),
+                tickangle: -45,
             },
-            scales: {
-                x: {
-                    title: { display: true, text: "Date" },
-                    ticks: {
-                        autoSkip: true,
-                        maxTicksLimit: 10,
-                    },
-                },
-                y: {
-                    title: {
-                        display: true,
-                        text: title.includes("Buying")
-                            ? "Buying Rate"
-                            : "Selling Rate",
-                    },
-                },
+            yaxis: {
+                title: yTitle,
+            },
+            legend: {
+                orientation: "h",
+                x: 0,
+                y: -0.3,
+            },
+            margin: {
+                t: 50,
+                r: 30,
+                b: 80,
+                l: 60,
             },
         });
 
-        buyChart = new Chart(buyCtx, {
-            type: "line",
-            data: { labels: allDates, datasets: buyDatasets },
-            options: commonOptions("Buying Rate Over Time"),
-        });
-
-        sellChart = new Chart(sellCtx, {
-            type: "line",
-            data: { labels: allDates, datasets: sellDatasets },
-            options: commonOptions("Selling Rate Over Time"),
-        });
+        Plotly.newPlot(
+            buyChartDiv,
+            buyTraces,
+            layoutTemplate("Buying Rate Over Time", "Buying Rate"),
+            { responsive: true }
+        );
+        Plotly.newPlot(
+            sellChartDiv,
+            sellTraces,
+            layoutTemplate("Selling Rate Over Time", "Selling Rate"),
+            { responsive: true }
+        );
     }
 
     function getRandomColor() {

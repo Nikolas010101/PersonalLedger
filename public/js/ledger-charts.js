@@ -8,18 +8,10 @@ document.addEventListener("DOMContentLoaded", () => {
     const sourceFilter = document.getElementById("sourceFilter");
     const loadChartsBtn = document.getElementById("loadCharts");
 
-    const cashflowCtx = document
-        .getElementById("cashflowChart")
-        .getContext("2d");
-    const pieCtx = document.getElementById("pieChart").getContext("2d");
-    const balanceLineChartCtx = document
-        .getElementById("balanceLineChart")
-        .getContext("2d");
-    const incomeExpenseChartCtx = document
-        .getElementById("incomeExpenseChart")
-        .getContext("2d");
-
-    let cashflowChart, pieChart, balanceLineChart, incomeExpenseChart;
+    const cashflowDiv = document.getElementById("cashflowChart");
+    const pieDiv = document.getElementById("pieChart");
+    const balanceLineDiv = document.getElementById("balanceLineChart");
+    const incomeExpenseDiv = document.getElementById("incomeExpenseChart");
 
     async function loadCategories() {
         const res = await fetch("/categories");
@@ -35,15 +27,12 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadSources() {
         const res = await fetch("/ledger/sources");
         const json = await res.json();
-        const sourceSelect = document.getElementById("sourceFilter");
-        sourceSelect.innerHTML = `
-            <option value="">All</option>
-        `;
+        sourceFilter.innerHTML = `<option value="">All</option>`;
         json.data.forEach((src) => {
             const option = document.createElement("option");
             option.value = src;
             option.textContent = src;
-            sourceSelect.appendChild(option);
+            sourceFilter.appendChild(option);
         });
     }
 
@@ -129,49 +118,47 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         const groupLabels = Object.keys(byGroup).sort((a, b) => {
-            const groupBy = groupBySelect.value;
-
             const parseDateKey = (key) => {
                 switch (groupBy) {
-                    case "day":
+                    case "day": {
                         const [day, month, year] = key.split("/").map(Number);
                         return new Date(year, month - 1, day);
+                    }
                     case "month":
                         return new Date(key + "-01");
                     case "year":
                         return new Date(key + "-01-01");
-                    case "week":
+                    case "week": {
                         const [y, w] = key.split("-W").map(Number);
                         const simple = new Date(y, 0, 1 + (w - 1) * 7);
                         const dow = simple.getDay();
-                        const ISOweekStart = simple;
                         if (dow <= 4)
-                            ISOweekStart.setDate(
+                            simple.setDate(
                                 simple.getDate() - simple.getDay() + 1
                             );
                         else
-                            ISOweekStart.setDate(
+                            simple.setDate(
                                 simple.getDate() + 8 - simple.getDay()
                             );
-                        return ISOweekStart;
+                        return simple;
+                    }
                     default:
                         return new Date(key);
                 }
             };
-
             return parseDateKey(a) - parseDateKey(b);
-        });
-
-        let cumulativeBalance = 0;
-        const cumulativeValues = groupLabels.map((label) => {
-            cumulativeBalance += byGroup[label];
-            return cumulativeBalance;
         });
 
         const groupValues = groupLabels.map((label) => byGroup[label]);
         const groupCategories = groupLabels.map((label) =>
             Array.from(categoriesByGroup[label])
         );
+
+        let cumulativeBalance = 0;
+        const cumulativeValues = groupLabels.map((label) => {
+            cumulativeBalance += byGroup[label];
+            return cumulativeBalance;
+        });
 
         const byCategory = {};
         data.forEach((row) => {
@@ -184,255 +171,185 @@ document.addEventListener("DOMContentLoaded", () => {
 
         data.forEach((row) => {
             const val = parseFloat(row.value_brl);
-            if (val > 0) {
-                totalIncome += val;
-            } else {
-                totalExpense += Math.abs(val);
-            }
+            if (val > 0) totalIncome += val;
+            else totalExpense += Math.abs(val);
         });
 
-        const catLabels = Object.keys(byCategory);
-        const catValues = catLabels.map((cat) => byCategory[cat]);
+        const cashflowColors = groupValues.map((val) =>
+            val >= 0 ? "rgba(76, 175, 80, 0.7)" : "rgba(244, 67, 54, 0.7)"
+        );
 
-        if (cashflowChart) cashflowChart.destroy();
-        if (pieChart) pieChart.destroy();
-        if (balanceLineChart) balanceLineChart.destroy();
-        if (incomeExpenseChart) incomeExpenseChart.destroy();
+        const cashflowBorderColors = groupValues.map((val) =>
+            val >= 0 ? "rgba(76, 175, 80, 1)" : "rgba(244, 67, 54, 1)"
+        );
 
-        cashflowChart = new Chart(cashflowCtx, {
+        const cashflowText = groupValues.map((val, idx) => {
+            const categories = groupCategories[idx];
+            let catText = "No category";
+            if (categories.length === 1) catText = categories[0];
+            else if (categories.length > 1) catText = "Multiple categories";
+            return `Amount: ${val.toFixed(2)}<br>Category: ${catText}`;
+        });
+
+        const cashflowTrace = {
+            x: groupLabels,
+            y: groupValues,
             type: "bar",
-            data: {
-                labels: groupLabels,
-                datasets: [
-                    {
-                        data: groupValues,
-                        backgroundColor: groupValues.map((val) =>
-                            val >= 0
-                                ? "rgba(76, 175, 80, 0.7)"
-                                : "rgba(244, 67, 54, 0.7)"
-                        ),
-                        borderColor: groupValues.map((val) =>
-                            val >= 0
-                                ? "rgba(76, 175, 80, 1)"
-                                : "rgba(244, 67, 54, 1)"
-                        ),
-                        borderWidth: 1,
-                        categories: groupCategories,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text:
-                                groupBy.charAt(0).toUpperCase() +
-                                groupBy.slice(1),
-                        },
-                        ticks: {
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            maxRotation: 45,
-                            minRotation: 30,
-                        },
-                    },
-                    y: {
-                        title: { display: true, text: "Amount" },
-                        beginAtZero: true,
-                    },
-                },
-                plugins: {
-                    legend: { display: false },
-                    title: {
-                        display: true,
-                        text: "Cash Flow",
-                        font: {
-                            size: 16,
-                            weight: "bold",
-                        },
-                    },
-                    tooltip: {
-                        mode: "nearest",
-                        intersect: false,
-                        callbacks: {
-                            label: (context) => {
-                                const value = context.parsed.y;
-                                const formattedValue = new Intl.NumberFormat(
-                                    undefined,
-                                    {
-                                        minimumFractionDigits: 2,
-                                        maximumFractionDigits: 2,
-                                    }
-                                ).format(value);
-
-                                const categories =
-                                    context.dataset.categories?.[
-                                        context.dataIndex
-                                    ];
-
-                                if (
-                                    Array.isArray(categories) &&
-                                    categories.length > 1
-                                ) {
-                                    return `Amount: ${formattedValue}\nCategory: Multiple categories`;
-                                }
-
-                                const category = Array.isArray(categories)
-                                    ? categories[0]
-                                    : categories || "No category";
-                                return `Amount: ${formattedValue}\nCategory: ${category}`;
-                            },
-                        },
-                    },
+            marker: {
+                color: cashflowColors,
+                line: {
+                    color: cashflowBorderColors,
+                    width: 1,
                 },
             },
+            hovertemplate:
+                "%{x}<br>Amount: %{y:,.2f}<br>%{customdata}<extra></extra>",
+            customdata: groupCategories.map((cats) => {
+                if (cats.length === 1) return cats[0];
+                if (cats.length > 1) return "Multiple categories";
+                return "No category";
+            }),
+        };
+
+        const cashflowLayout = {
+            title: {
+                text: "Cash Flow",
+                font: { size: 16, family: "Arial, sans-serif" },
+            },
+            xaxis: {
+                title: groupBy.charAt(0).toUpperCase() + groupBy.slice(1),
+                tickangle: -45,
+                tickmode: "auto",
+                nticks: 10,
+            },
+            yaxis: {
+                title: "Amount",
+                zeroline: true,
+            },
+            margin: { t: 40, b: 80 },
+            showlegend: false,
+            autosize: true,
+        };
+
+        Plotly.newPlot(cashflowDiv, [cashflowTrace], cashflowLayout, {
+            responsive: true,
+            displayModeBar: false,
         });
 
-        pieChart = new Chart(pieCtx, {
+        const adjustedByCategory = {};
+        const isIncomeMap = {};
+
+        data.forEach((row) => {
+            const val = parseFloat(row.value_brl);
+            const absVal = Math.abs(val);
+            if (!adjustedByCategory[row.category])
+                adjustedByCategory[row.category] = 0;
+            adjustedByCategory[row.category] += absVal;
+
+            if (!(row.category in isIncomeMap)) isIncomeMap[row.category] = 0;
+            isIncomeMap[row.category] += val;
+        });
+
+        const unifiedCatLabels = Object.keys(adjustedByCategory);
+        const unifiedCatValues = unifiedCatLabels.map(
+            (cat) => adjustedByCategory[cat]
+        );
+
+        const unifiedColors = unifiedCatLabels.map((cat) => {
+            const net = isIncomeMap[cat];
+            const hue = net >= 0 ? 120 : 0;
+            const sat = 40 + Math.random() * 40;
+            const light = 40 + Math.random() * 40;
+            return `hsl(${hue}, ${sat}%, ${light}%)`;
+        });
+
+        const unifiedPieTrace = {
+            labels: unifiedCatLabels,
+            values: unifiedCatValues,
             type: "pie",
-            data: {
-                labels: catLabels,
-                datasets: [
-                    {
-                        data: catValues,
-                        backgroundColor: catLabels.map((cat, i) => {
-                            const value = catValues[i];
-                            const sat = 10 + Math.random() * 90; // 10%–100% saturation
-                            const light = 10 + Math.random() * 80; // 10%–90% lightness
+            marker: { colors: unifiedColors },
+            textinfo: "label+percent",
+            hoverinfo: "label+value+percent",
+        };
 
-                            if (value < 0) {
-                                return `hsl(0, ${sat}%, ${light}%)`;
-                            } else {
-                                return `hsl(120, ${sat}%, ${light}%)`;
-                            }
-                        }),
-                    },
-                ],
+        const unifiedPieLayout = {
+            title: {
+                text: "Income and Expenses by Category (Combined)",
+                font: { size: 16, family: "Arial, sans-serif" },
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        mode: "nearest",
-                        intersect: false,
-                    },
-                    legend: {
-                        position: "bottom",
-                    },
-                    title: {
-                        display: true,
-                        text: "Income and Expenses by Category",
-                        font: {
-                            size: 16,
-                            weight: "bold",
-                        },
-                    },
-                },
-            },
+            legend: { orientation: "h", y: -0.2, x: 0.5, xanchor: "center" },
+            margin: { t: 40, b: 40 },
+            autosize: true,
+        };
+
+        Plotly.newPlot(pieDiv, [unifiedPieTrace], unifiedPieLayout, {
+            responsive: true,
+            displayModeBar: false,
         });
 
-        balanceLineChart = new Chart(balanceLineChartCtx, {
-            type: "line",
-            data: {
-                labels: groupLabels,
-                datasets: [
-                    {
-                        data: cumulativeValues,
-                        fill: false,
-                        borderColor: "rgba(75, 192, 192, 1)",
-                        tension: 0.2,
-                    },
-                ],
+        const balanceTrace = {
+            x: groupLabels,
+            y: cumulativeValues,
+            type: "scatter",
+            mode: "lines+markers",
+            line: {
+                color: "rgba(75, 192, 192, 1)",
+                shape: "spline",
+                smoothing: 0.2,
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: {
-                        title: {
-                            display: true,
-                            text:
-                                groupBy.charAt(0).toUpperCase() +
-                                groupBy.slice(1),
-                        },
-                        ticks: {
-                            autoSkip: true,
-                            maxTicksLimit: 10,
-                            maxRotation: 45,
-                            minRotation: 30,
-                        },
-                    },
-                    y: {
-                        title: {
-                            display: true,
-                            text: "Balance",
-                        },
-                        grid: {
-                            lineWidth: (context) => {
-                                return context.tick.value === 0 ? 3 : 1;
-                            },
-                            color: (context) => {
-                                return context.tick.value === 0
-                                    ? "#000000"
-                                    : "#e0e0e0";
-                            },
-                        },
-                    },
-                },
-                plugins: {
-                    tooltip: {
-                        mode: "nearest",
-                        intersect: false,
-                    },
-                    legend: {
-                        display: false,
-                    },
-                    title: {
-                        display: true,
-                        text: "Estimated Cumulative Balance Over Time",
-                        font: {
-                            size: 16,
-                            weight: "bold",
-                        },
-                    },
-                },
+            marker: { size: 6 },
+            hovertemplate: "%{x}<br>Balance: %{y:,.2f}<extra></extra>",
+        };
+
+        const balanceLayout = {
+            title: {
+                text: "Estimated Cumulative Balance Over Time",
+                font: { size: 16, family: "Arial, sans-serif" },
             },
+            xaxis: {
+                title: groupBy.charAt(0).toUpperCase() + groupBy.slice(1),
+                tickangle: -45,
+                nticks: 10,
+            },
+            yaxis: {
+                title: "Balance",
+                zeroline: true,
+                zerolinewidth: 3,
+                zerolinecolor: "#000",
+            },
+            margin: { t: 40, b: 80 },
+            showlegend: false,
+            autosize: true,
+        };
+
+        Plotly.newPlot(balanceLineDiv, [balanceTrace], balanceLayout, {
+            responsive: true,
+            displayModeBar: false,
         });
 
-        incomeExpenseChart = new Chart(incomeExpenseChartCtx, {
-            type: "doughnut",
-            data: {
-                labels: ["Income", "Expenses"],
-                datasets: [
-                    {
-                        data: [totalIncome, totalExpense],
-                        backgroundColor: ["#4caf50", "#f44336"],
-                    },
-                ],
+        const doughnutTrace = {
+            labels: ["Income", "Expenses"],
+            values: [totalIncome, totalExpense],
+            type: "pie",
+            hole: 0.5,
+            marker: { colors: ["#4caf50", "#f44336"] },
+            textinfo: "label+value",
+            hoverinfo: "label+value+percent",
+        };
+
+        const doughnutLayout = {
+            title: {
+                text: "Income vs. Expenses",
+                font: { size: 16, family: "Arial, sans-serif" },
             },
-            options: {
-                responsive: true,
-                plugins: {
-                    tooltip: {
-                        mode: "nearest",
-                        intersect: true,
-                    },
-                    legend: {
-                        position: "bottom",
-                    },
-                    title: {
-                        display: true,
-                        text: "Income vs. Expenses",
-                        font: {
-                            size: 16,
-                            weight: "bold",
-                        },
-                    },
-                },
-            },
+            legend: { orientation: "h", y: -0.2, x: 0.5, xanchor: "center" },
+            margin: { t: 40, b: 40 },
+            autosize: true,
+        };
+
+        Plotly.newPlot(incomeExpenseDiv, [doughnutTrace], doughnutLayout, {
+            responsive: true,
+            displayModeBar: false,
         });
     }
 
