@@ -277,7 +277,13 @@ document.addEventListener("DOMContentLoaded", () => {
                 text: "Income and Expenses by Category (Combined)",
                 font: { size: 16, family: "Arial, sans-serif" },
             },
-            legend: { orientation: "h", y: -0.2, x: 0.5, xanchor: "center" },
+            legend: {
+                orientation: "h",
+                y: -0.6,
+                yanchor: "top",
+                x: 0.5,
+                xanchor: "center",
+            },
             margin: { t: 40, b: 40 },
             autosize: true,
         };
