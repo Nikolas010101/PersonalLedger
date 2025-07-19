@@ -2,12 +2,15 @@ import * as XLSX from "xlsx";
 import { readFileSync } from "fs";
 import { extname } from "path";
 import {
+    fromDdMmmToUnixTs,
     fromDdMmYyyyToUnixTs,
     fromYyyyMmDdToDdMmYyyy,
     fromDdMmYyyyDashToUnixTs,
     excelDateToUnixTs,
+    isDdMmmDate,
 } from "./dateUtils.js";
 import { parse } from "csv-parse/sync";
+import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 
 function parseXLS(filePath, db) {
     const fileBuffer = readFileSync(filePath);
@@ -200,12 +203,100 @@ function parseCSV(filePath, db) {
     return response;
 }
 
-export function parseFile(filePath, db, originalName) {
+async function parsePDF(filePath, db) {
+    const fileBuffer = readFileSync(filePath);
+    const uint8Array = new Uint8Array(fileBuffer);
+
+    const loadingTask = pdfjsLib.getDocument({ data: uint8Array });
+    const pdfDocument = await loadingTask.promise;
+
+    const insert = db.prepare(`
+        INSERT INTO ledger (date, description, value, category, source, currency)
+        VALUES (?, ?, ?, NULL, ?, ?)
+        `);
+
+    const response = {
+            totalCount: 0,
+            insertedCount: 0,
+            statementType: "Cartão de crédito - Itaú",
+        },
+        STATE_ENUM = { date: 0, description: 1 };
+
+    let currState,
+        rowObj,
+        year,
+        hasEnded = false;
+
+    for (let pageNum = 1; pageNum <= pdfDocument.numPages; pageNum++) {
+        if (hasEnded) break;
+        const page = await pdfDocument.getPage(pageNum);
+        const textContent = await page.getTextContent();
+
+        const lines = textContent.items
+            .map((item) => item.str)
+            .filter((item) => item.trim() && item !== "-");
+
+        for (const [index, line] of lines.entries()) {
+
+            // Itaú credit card statement format
+            if (line === "venc. da fatura") {
+                const [d, m, y] = lines?.[index + 1].split("/");
+                const date = new Date(y, m, d);
+                date.setMonth(date.getMonth() - 1);
+                year = date.getFullYear();
+            }
+            if (line.includes("total nacional do cartão")) {
+                hasEnded = true;
+                break;
+            }
+            if (isDdMmmDate(line)) {
+                currState = STATE_ENUM.date;
+
+                rowObj = {};
+                rowObj.date = fromDdMmmToUnixTs(line, year);
+            }
+            if (
+                !line.includes("R$") &&
+                !isDdMmmDate(line) &&
+                !["PAGAMENTO EFETUADO", "total da fatura anterior"].includes(
+                    line
+                ) &&
+                currState === STATE_ENUM.date
+            ) {
+                currState = STATE_ENUM.description;
+                rowObj.description = line.toUpperCase();
+            }
+            if (line.includes("R$") && currState === STATE_ENUM.description) {
+                rowObj.value = Math.round(
+                    parseFloat(line.replace("R$", "").replace(",", ".")) * 100
+                );
+                rowObj.source = "Cartão de crédito - Itaú";
+                rowObj.currency = "BRL";
+
+                const { date, description, value, source, currency } = rowObj;
+                const result = insert.run(
+                    date,
+                    description,
+                    value,
+                    source,
+                    currency
+                );
+                response.totalCount++;
+                if (result.changes > 0) response.insertedCount++;
+            }
+        }
+    }
+    return response;
+}
+
+export async function parseFile(filePath, db, originalName) {
     const fileExt = extname(originalName).toLowerCase();
     if (fileExt === ".xls" || fileExt === ".xlsx") {
         return parseXLS(filePath, db);
     } else if (fileExt === ".csv") {
         return parseCSV(filePath, db);
+    } else if (fileExt === ".pdf") {
+        return await parsePDF(filePath, db);
     } else {
         throw new Error("Unsupported file type.");
     }

@@ -1,3 +1,18 @@
+const months = {
+    jan: "01",
+    fev: "02",
+    mar: "03",
+    abr: "04",
+    mai: "05",
+    jun: "06",
+    jul: "07",
+    ago: "08",
+    set: "09",
+    out: "10",
+    nov: "11",
+    dez: "12",
+};
+
 // Converts dd/mm/yyyy to UNIX timestamp
 export function fromDdMmYyyyToUnixTs(dateStr) {
     const [d, m, y] = dateStr.split("/");
@@ -44,4 +59,22 @@ export function excelDateToUnixTs(excelSerial) {
     const excelEpoch = Date.UTC(1899, 11, 30);
     const unixMs = excelEpoch + excelSerial * 86400000;
     return Math.floor(unixMs / 1000);
+}
+
+// Converts dd / MMM to UNIX timestamp
+export function fromDdMmmToUnixTs(dateStr, year) {
+    const [d, m] = dateStr.split("/");
+    return Math.floor(
+        new Date(
+            `${year}-${months[m.trim()]}-${d.trim()}T00:00:00Z`
+        ).getTime() / 1000
+    );
+}
+
+// Checks if string is in dd / MMM format
+export function isDdMmmDate(dateStr) {
+    const dateArray = dateStr.split("/");
+    return (
+        months.hasOwnProperty(dateArray?.[1]?.trim()) && dateArray.length === 2
+    );
 }

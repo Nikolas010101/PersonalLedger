@@ -6,11 +6,11 @@ import db from "../db/db.js";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-router.post("/", upload.single("file"), (req, res) => {
+router.post("/", upload.single("file"), async (req, res) => {
     try {
         const filePath = req.file.path;
         const originalName = req.file.originalname;
-        const result = parseFile(filePath, db, originalName);
+        const result = await parseFile(filePath, db, originalName);
         res.json({ success: true, data: result });
     } catch (err) {
         console.error("File parsing error:", err);
