@@ -162,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
                 if (response.ok) {
                     await response.json();
+                    fetchRates()
                     alert("Exchange rates fetched successfully!");
                 } else {
                     const err = await response.json();
