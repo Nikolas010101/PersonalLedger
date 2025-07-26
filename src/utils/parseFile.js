@@ -156,7 +156,7 @@ function parseCSV(filePath, db) {
                 const rowObj = {
                     date: fromDdMmYyyyToUnixTs(fromYyyyMmDdToDdMmYyyy(row[0])),
                     description: row[1].toUpperCase(),
-                    value: Math.round(parseFloat(row[2]) * -100),
+                    value: -Math.round(parseFloat(row[2]) * 100),
                     source: response.statementType,
                     currency: "BRL",
                 };
@@ -237,7 +237,6 @@ async function parsePDF(filePath, db) {
             .filter((item) => item.trim() && item !== "-");
 
         for (const [index, line] of lines.entries()) {
-
             // Itaú credit card statement format
             if (line === "venc. da fatura") {
                 const [d, m, y] = lines?.[index + 1].split("/");
@@ -267,7 +266,7 @@ async function parsePDF(filePath, db) {
                 rowObj.description = line.toUpperCase();
             }
             if (line.includes("R$") && currState === STATE_ENUM.description) {
-                rowObj.value = Math.round(
+                rowObj.value = -Math.round(
                     parseFloat(line.replace("R$", "").replace(",", ".")) * 100
                 );
                 rowObj.source = "Cartão de crédito - Itaú";
