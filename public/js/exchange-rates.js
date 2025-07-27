@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const currencyFilter = document.getElementById("currencyFilter");
     const applyFiltersBtn = document.getElementById("applyFilters");
 
-    const rowsPerPage = 20;
+    const rowsPerPage = 10;
     let data = [];
     let currentPage = 1;
 
