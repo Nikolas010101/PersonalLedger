@@ -294,8 +294,6 @@ export async function parseFile(filePath, db, originalName) {
         return parseXLS(filePath, db);
     } else if (fileExt === ".csv") {
         return parseCSV(filePath, db);
-    } else if (fileExt === ".pdf") {
-        return await parsePDF(filePath, db);
     } else {
         throw new Error("Unsupported file type.");
     }
