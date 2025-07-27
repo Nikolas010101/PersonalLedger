@@ -107,6 +107,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 });
             });
         });
+
+        const option = document.createElement("option");
+        option.value = "";
+        option.textContent = "";
+        category.appendChild(option);
+        categoriesCache.forEach((cat) => {
+            const option = document.createElement("option");
+            option.value = cat.name;
+            option.textContent = cat.name;
+            category.appendChild(option);
+        });
     }
 
     function renderPagination() {
@@ -244,5 +255,56 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Failed to download CSV:", err);
             alert("An error occurred while downloading the CSV.");
         }
+    });
+
+    const entryBtn = document.getElementById("createEntryBtn");
+    const cancelBtn = document.getElementById("cancelEntryBtn");
+    const entryForm = document.getElementById("entryForm");
+
+    const date = document.getElementById("date");
+    date.value = new Date().toISOString().split("T")[0];
+    const description = document.getElementById("description");
+    const value = document.getElementById("value");
+    const category = document.getElementById("category");
+    const source = document.getElementById("source");
+    const currency = document.getElementById("currency");
+    const modal = document.getElementById("entryModal");
+
+    entryForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+
+        try {
+            const res = await fetch("/upload/manual", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    date: date.value,
+                    description: description.value,
+                    value: value.value,
+                    category: category.value,
+                    source: source.value,
+                    currency: currency.value,
+                }),
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                throw new Error(err.error || "Failed to create ledger entry.");
+            }
+
+            alert("Ledger entry created successfully!");
+            modal.style.display = "none";
+            location.reload();
+        } catch (error) {
+            alert("Error saving currencies: " + error.message);
+        }
+    });
+
+    entryBtn.addEventListener("click", async () => {
+        modal.style.display = "flex";
+    });
+
+    cancelBtn.addEventListener("click", () => {
+        modal.style.display = "none";
     });
 });

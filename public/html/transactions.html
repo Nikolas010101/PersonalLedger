@@ -10,6 +10,54 @@
         <h1>Transaction History</h1>
 
         <input type="text" id="searchInput" placeholder="Search..." />
+        <button id="createEntryBtn" type="button">
+            Create Manual Ledger Entry
+        </button>
+        <div id="entryModal" class="modal" style="display: none">
+            <div class="modal-content">
+                <h2>Create New Ledger Entry</h2>
+                <form id="entryForm">
+                    <div class="filters">
+                        <label
+                            >Transaction date: <input type="date" id="date"
+                        /></label>
+                        <label for="description"
+                            >Description:
+                            <input
+                                type="text"
+                                id="description"
+                                name="description"
+                            />
+                        </label>
+                        <label for="value"
+                            >Value:
+                            <input
+                                type="number"
+                                step="0.01"
+                                id="value"
+                                name="value"
+                            />
+                        </label>
+                        <label>
+                            Category:
+                            <select id="category"></select>
+                        </label>
+                        <label for="source"
+                            >Source:
+                            <input type="text" id="source" name="source" />
+                        </label>
+                        <label for="currency"
+                            >Currency:
+                            <input type="text" id="currency" name="currency" />
+                        </label>
+                        <button type="submit">Upload</button>
+                        <button type="button" id="cancelEntryBtn">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
         <button id="exportBtn">Export data</button>
 
         <table id="dataTable">

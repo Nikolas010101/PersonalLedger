@@ -292,7 +292,7 @@ input[type="file"] {
     text-align: left;
 }
 
-.filters input[type="date"],
+.filters input,
 .filters select {
     margin-top: 5px;
     padding: 8px 12px;
@@ -300,9 +300,14 @@ input[type="file"] {
     border-radius: 5px;
     border: 1px solid #ccc;
     min-width: 180px;
+    max-width: 180px;
     cursor: pointer;
     background-color: white;
     box-sizing: border-box;
+}
+
+form .filters {
+    width: 100%;
 }
 
 #currencyFilter,
