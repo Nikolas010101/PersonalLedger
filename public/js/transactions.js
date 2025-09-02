@@ -50,9 +50,9 @@ document.addEventListener("DOMContentLoaded", () => {
             tr.innerHTML = `
                 <td>${row.date}</td>
                 <td>${
-                    row.description.length <= 50
+                    row.description.length <= 40
                         ? row.description
-                        : row.description.slice(0, 50) + "..."
+                        : row.description.slice(0, 40) + "..."
                 }</td>
                 <td style="text-align: right;">${parseFloat(
                     row.value_brl
