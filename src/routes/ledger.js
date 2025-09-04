@@ -73,7 +73,7 @@ router.get("/", (req, res) => {
             query += " WHERE " + conditions.join(" AND ");
         }
 
-        query += " ORDER BY date DESC";
+        query += " ORDER BY date DESC, value ASC";
 
         const rows = db.prepare(query).all(params);
         const formatted = rows.map((r) => ({
