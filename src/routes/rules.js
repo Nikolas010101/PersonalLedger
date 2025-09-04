@@ -67,7 +67,7 @@ router.post("/:id/apply", (req, res) => {
             query = `UPDATE ledger SET category = ? WHERE category IS NOT NULL`;
             break;
         case "all":
-            query = `UPDATE ledger SET category = ?`;
+            query = `UPDATE ledger SET category = ? WHERE 1=1`;
             break;
         default:
             return res.status(400).json({ error: "Invalid update type." });
